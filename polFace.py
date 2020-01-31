@@ -18,7 +18,7 @@ def longLatToCartesian(lon, lat):
         return X,Y,Z
 
 def cartesianToLatLon(X,Y,Z):
-    phi = np.arctan2((math.sqrt(X*X)+math.sqrt(Y*Y)), Z)
+    phi = np.arctan2(np.sqrt((X**2)+(Y**2)), Z)
     theta = np.arctan2(Y,X)
     lat = 90 - phi * (180/pi)
     lon = theta * (180/pi)
@@ -38,18 +38,18 @@ class polFace():
         self.center = self.calcCenter()
         self.height = 850
         self.width = 850
-        self.FOV = [30/2, 30]
+        self.FOV = [28/2, 28]
         self.screen_points = self.get_screen_img()
-        cx,cy,cz = longLatToCartesian(self.center.lon, self.center.lat)
-        vx,vy,vz = longLatToCartesian(self.vertexList[0].lon, self.vertexList[0].lat)
-        vx1,vy1,vz1 = longLatToCartesian(self.vertexList[3].lon, self.vertexList[3].lat)
+        # cx,cy,cz = longLatToCartesian(self.center.lon, self.center.lat)
+        # vx,vy,vz = longLatToCartesian(self.vertexList[0].lon, self.vertexList[0].lat)
+        # vx1,vy1,vz1 = longLatToCartesian(self.vertexList[3].lon, self.vertexList[3].lat)
 
-        toCenter = distancePoint(0,0,0,cx,cy,cz)
-        print(cx,cy,cz, "   ",toCenter)
-        toVetex = distancePoint(vx1,vy1,vz1,vx,vy,vz)
-        print(vx,vy,vz, "  vertex ",toVetex)
-        fov = np.degrees(np.arctan((toVetex/2)/1) * 2 )
-        print(fov)
+        # toCenter = distancePoint(0,0,0,cx,cy,cz)
+        # # print(cx,cy,cz, "   ",toCenter)
+        # toVetex = distancePoint(vx1,vy1,vz1,vx,vy,vz)
+        # # print(vx,vy,vz, "  vertex ",toVetex)
+        # fov = np.degrees(np.arctan((toVetex/2)/1) * 2 )
+        # print(fov)
         # sys.exit()
 
 
@@ -155,7 +155,7 @@ class polFace():
     def bilinear_interpolation(self, screen_coord):
         uf = np.mod(screen_coord.T[0],1) * self.frame_width  # long - width
         vf = np.mod(screen_coord.T[1],1) * self.frame_height  # lat - height
-
+        print(np.shape(vf), self.frame_width, np.shape(screen_coord.T[0]), np.shape(screen_coord[0]))
         x0 = np.floor(uf).astype(int)  # coord of pixel to bottom left
         y0 = np.floor(vf).astype(int)
         x2 = np.add(x0, np.ones(uf.shape).astype(int))  # coords of pixel to top right
@@ -192,6 +192,23 @@ class polFace():
         #     B_idx = 2097151
     
         flat_img = np.reshape(self.frame, [-1, self.frame_channel])
+        print(len(flat_img), np.shape(A_idx), np.shape(B_idx), np.shape(C_idx), np.shape(D_idx))
+
+        for idx in range(0,len(A_idx)):
+            if A_idx[idx] >= len(flat_img) :
+                A_idx[idx] = len(flat_img) - 1
+
+        for idx in range(0,len(B_idx)):
+            if B_idx[idx] >= len(flat_img) :
+                B_idx[idx] = len(flat_img) - 1
+
+        for idx in range(0,len(C_idx)):
+            if C_idx[idx] >= len(flat_img) :
+                C_idx[idx] = len(flat_img) - 1   
+
+        for idx in range(0,len(D_idx)):
+            if D_idx[idx] >= len(flat_img) :
+                D_idx[idx] = len(flat_img) - 1
 
         A = np.take(flat_img, A_idx, axis=0)
         B = np.take(flat_img, B_idx, axis=0)
