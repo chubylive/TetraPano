@@ -4,6 +4,8 @@ import math
 import sys
 import matplotlib.pyplot as plt
 from math import pi
+from PIL import Image
+from PIL import ImageDraw
 
 fig,ax = plt.subplots()
 pi_2 = pi * 0.5
@@ -38,7 +40,7 @@ class polFace():
         self.center = self.calcCenter()
         self.height = 850
         self.width = 850
-        self.FOV = [28/2, 28]
+        self.FOV =[37/2, 37]
         self.screen_points = self.get_screen_img()
         # cx,cy,cz = longLatToCartesian(self.center.lon, self.center.lat)
         # vx,vy,vz = longLatToCartesian(self.vertexList[0].lon, self.vertexList[0].lat)
@@ -150,7 +152,7 @@ class polFace():
         x = (np.cos(lat) * np.sin(lon - lon1))/cos_c
         y = ((np.cos(lat1) * np.sin(lat)) - (np.sin(lat1) * np.cos(lat) * np.cos(lon - lon1)))/cos_c
         
-        return x,y
+        return np.array([x,y])
 
     def bilinear_interpolation(self, screen_coord):
         uf = np.mod(screen_coord.T[0],1) * self.frame_width  # long - width
@@ -227,12 +229,16 @@ class polFace():
         DD = np.multiply(D, np.array([wd, wd, wd]).T)
         nfov = np.reshape(np.round(AA + BB + CC + DD).astype(np.uint8), [self.height, self.width, 3])
         
-        return ax.imshow(nfov,animated =True)
+        imgPrj = Image.fromarray(nfov,'RGB')
+        # ax.imshow(nfov,animated =True)
+        return imgPrj
         # plt.show()
          # nfov
 
     def projectOnToPlace(self, frame):
         # print(frame)
+        imageOut = Image.new("RGB", (int(850*3),int(850*2)),"white")
+
         self.frame = frame
         self.frame_height = frame.shape[0]
         self.frame_width = frame.shape[1]
@@ -242,20 +248,144 @@ class polFace():
         convertedScreenCoord = self.get_coord_rad(isCenterPt=False)
         ax.set_title(str(self.cp))
         spericalCoord = self.getSphericalCordofGnomonic(convertedScreenCoord)
-        return self.bilinear_interpolation(spericalCoord)
+        prjImage =  self.bilinear_interpolation(spericalCoord)
+        xyPoints = []
+        for vert in self.vertexList:
+            xyPoints.append(self.getGnomonicCordofSpherical(vert.lon, vert.lat))
+        center_pointXY = self.getGnomonicCordofSpherical(self.center.lon, self.center.lat)
+        self.transformSqr(xyPoints,xyPoints,prjImage,imageOut)
+        imageOut.save("images/test11.jpg")
 
 
-degrees = 180 / pi
-asin1_3 = math.asin(1 / 3)
-phi1 = math.atan(math.sqrt(1/2)) * degrees
-cube = [[0, phi1], [90, phi1], [180, phi1], [-90, phi1],
-  [0, -phi1], [90, -phi1], [180, -phi1], [-90, -phi1]]
+    def transformTri(self, src_tri, dst_tri, src_img, dst_img):
+        ((x11,x12), (x21,x22), (x31,x32)) = src_tri
+        ((y11,y12), (y21,y22), (y31,y32)) = dst_tri
 
-[ [0, 3, 2, 1], # N
-  [0, 1, 5, 4],
-  [1, 2, 6, 5],
-  [2, 3, 7, 6],
-  [3, 0, 4, 7],
-  [4, 5, 6, 7]]  # S
+        M = np.array([
+                         [y11, y12, 1, 0, 0, 0],
+                         [y21, y22, 1, 0, 0, 0],
+                         [y31, y32, 1, 0, 0, 0],
+                         [0, 0, 0, y11, y12, 1],
+                         [0, 0, 0, y21, y22, 1],
+                         [0, 0, 0, y31, y32, 1]
+                    ])
 
-f1 = polFace([polVertex(cube[0]), polVertex(cube[3]), polVertex(cube[2]), polVertex(cube[1])])
+        y = np.array([x11, x21, x31, x12, x22, x32])
+
+        A = np.linalg.solve(M, y)
+
+        src_copy = src_img.copy()
+        srcdraw = ImageDraw.Draw(src_copy)
+        srcdraw.polygon(src_tri)
+        # src_copy.show()
+        transformed = src_img.transform(dst_img.size, Image.AFFINE, A)
+
+        mask = Image.new('1', dst_img.size)
+        maskdraw = ImageDraw.Draw(mask)
+        maskdraw.polygon(dst_tri, fill=255)
+
+        dstdraw = ImageDraw.Draw(dst_img)
+        dstdraw.polygon(dst_tri, fill=(255,255,255))
+        # dst_img.show()
+        dst_img.paste(transformed, mask=mask)
+        # dst_img.show()
+
+    def transformSqr(self, src_Sqr, dst_Sqr, src_img, dst_img):
+        ((x11,x12), (x21,x22), (x31,x32), (x41,x42)) = (((src_Sqr[0])[0],(src_Sqr[0])[1]),
+                                                        ((src_Sqr[1])[0],(src_Sqr[1])[1]),
+                                                        ((src_Sqr[2])[0],(src_Sqr[2])[1]),
+                                                        ((src_Sqr[3])[0],(src_Sqr[3])[1]))
+        ((y11,y12), (y21,y22), (y31,y32), (y41,y42)) = ((dst_Sqr[0][0],dst_Sqr[0][1]),
+                                                        (dst_Sqr[1][0],dst_Sqr[1][1]),
+                                                        (dst_Sqr[2][0],dst_Sqr[2][1]),
+                                                        (dst_Sqr[3][0],dst_Sqr[3][1]))
+        src_SqrArr = [((src_Sqr[0])[0],(src_Sqr[0])[1]),
+                                                        ((src_Sqr[1])[0],(src_Sqr[1])[1]),
+                                                        ((src_Sqr[2])[0],(src_Sqr[2])[1]),
+                                                        ((src_Sqr[3])[0],(src_Sqr[3])[1])]
+
+        dst_SqrArr = [(dst_Sqr[0][0],dst_Sqr[0][1]),
+                                                        (dst_Sqr[1][0],dst_Sqr[1][1]),
+                                                        (dst_Sqr[2][0],dst_Sqr[2][1]),
+                                                        (dst_Sqr[3][0],dst_Sqr[3][1])]
+        M = np.array([
+                         [y11, y12, 1, 0, 0, 0, 0],
+                         [y21, y22, 1, 0, 0, 0, 0],
+                         [y31, y32, 1, 0, 0, 0, 0],
+                         [y41, y42, 1, 0, 0, 0, 0],
+                         [0, 0, 0, 0, y11, y12, 1],
+                         [0, 0, 0, 0, y21, y22, 1],
+                         [0, 0, 0, 0, y31, y32, 1],
+                         [0, 0, 0, 0, y41, y42, 1]
+                    ])
+
+        y = np.array([x11, x21, x31, x41, x12, x22, x32, x42])
+
+        # A = np.linalg.solve(M, y)
+
+        src_copy = src_img.copy()
+        srcdraw = ImageDraw.Draw(src_copy)
+        srcdraw.polygon(src_SqrArr)
+        src_copy.show()
+        # transformed = src_img.transform(dst_img.size, Image.AFFINE, A)
+
+        mask = Image.new('1', dst_img.size)
+        maskdraw = ImageDraw.Draw(mask)
+        maskdraw.polygon(dst_SqrArr, fill=255)
+
+        dstdraw = ImageDraw.Draw(dst_img)
+        dstdraw.polygon(dst_SqrArr, fill=(255,255,255))
+        # dst_img.show()
+        # dst_img.paste(transformed, mask=mask)
+        # dst_img.show()
+
+def transformPent(self, src_Sqr, dst_Sqr, src_img, dst_img):
+        ((x11,x12), (x21,x22), (x31,x32), (x41,x42), (x51,x52)) = src_Sqr
+        ((y11,y12), (y21,y22), (y31,y32), (y41,y42), (y51,y52)) = dst_Sqr
+
+        M = np.array([
+                         [y11, y12, 1, 0, 0, 0, 0, 0],
+                         [y21, y22, 1, 0, 0, 0, 0, 0],
+                         [y31, y32, 1, 0, 0, 0, 0, 0],
+                         [y41, y42, 1, 0, 0, 0, 0, 0],
+                         [y51, y52, 1, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, y11, y12, 1],
+                         [0, 0, 0, 0, 0, y21, y22, 1],
+                         [0, 0, 0, 0, 0, y31, y32, 1],
+                         [0, 0, 0, 0, 0, y41, y42, 1],
+                         [0, 0, 0, 0, 0, y51, y52, 1]
+                    ])
+
+        y = np.array([x11, x21, x31, x12, x22, x32, x42, x52])
+
+        A = np.linalg.solve(M, y)
+
+        src_copy = src_img.copy()
+        srcdraw = ImageDraw.Draw(src_copy)
+        srcdraw.polygon(src_Sqr)
+        # src_copy.show()
+        transformed = src_img.transform(dst_img.size, Image.AFFINE, A)
+
+        mask = Image.new('1', dst_img.size)
+        maskdraw = ImageDraw.Draw(mask)
+        maskdraw.polygon(dst_Sqr, fill=255)
+
+        dstdraw = ImageDraw.Draw(dst_img)
+        dstdraw.polygon(dst_Sqr, fill=(255,255,255))
+        # dst_img.show()
+        dst_img.paste(transformed, mask=mask)
+        # dst_img.show()
+# degrees = 180 / pi
+# asin1_3 = math.asin(1 / 3)
+# phi1 = math.atan(math.sqrt(1/2)) * degrees
+# cube = [[0, phi1], [90, phi1], [180, phi1], [-90, phi1],
+#   [0, -phi1], [90, -phi1], [180, -phi1], [-90, -phi1]]
+
+# [ [0, 3, 2, 1], # N
+#   [0, 1, 5, 4],
+#   [1, 2, 6, 5],
+#   [2, 3, 7, 6],
+#   [3, 0, 4, 7],
+#   [4, 5, 6, 7]]  # S
+
+# f1 = polFace([polVertex(cube[0]), polVertex(cube[3]), polVertex(cube[2]), polVertex(cube[1])])
