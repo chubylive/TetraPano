@@ -120,7 +120,22 @@ class NFOV():
         #     B_idx = 2097151
 
         flat_img = np.reshape(self.frame, [-1, self.frame_channel])
-        # print (flat_img.shape)
+      
+        for idx in range(0,len(A_idx)):
+            if A_idx[idx] >= len(flat_img) :
+                A_idx[idx] = len(flat_img) - 1
+
+        for idx in range(0,len(B_idx)):
+            if B_idx[idx] >= len(flat_img) :
+                B_idx[idx] = len(flat_img) - 1
+
+        for idx in range(0,len(C_idx)):
+            if C_idx[idx] >= len(flat_img) :
+                C_idx[idx] = len(flat_img) - 1   
+
+        for idx in range(0,len(D_idx)):
+            if D_idx[idx] >= len(flat_img) :
+                D_idx[idx] = len(flat_img) - 1
         A = np.take(flat_img, A_idx, axis=0)
         B = np.take(flat_img, B_idx, axis=0)
         C = np.take(flat_img, C_idx, axis=0)
@@ -298,7 +313,7 @@ def projectFace(vertex1, vertex2, vertex3, centroid, faceLetter):
 # test the class
 if __name__ == '__main__':
     import imageio as im
-    img = im.imread('images/workBuddies.jpg')
+    img = im.imread('images/IMG_20200725_151032_399631548.jpg')
     # img = im.imread('images/test4.jpg')
     # img = im.imread('images/atlas1.jpg')
     inSize = img.size
