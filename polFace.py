@@ -35,12 +35,27 @@ class polVertex ():
         self.lat = lonlat[1]
 class polFace():
     """docstring for polFace"""
-    def __init__(self, polVertexList=[]):
+    def __init__(self, polVertexList=[], faceType="TETRA"):
         self.vertexList = polVertexList
         self.center = self.calcCenter()
         self.height = 850
         self.width = 850
-        self.FOV =[37/2, 37]
+        self.faceType = faceType
+        self.trans = 0
+        self.scale = 1
+        if(faceType == "CUBE"):
+            self.FOV =[37/2, 37]
+        elif(faceType == "TETRA"):
+            self.FOV =[104/2, 104]
+        elif(faceType == "OCTA"):
+            self.FOV =[52/2, 52]
+        elif(faceType == "DODE"):
+            self.FOV =[28/2, 28]
+        elif(faceType == "ICOS"):
+            self.FOV =[28/2, 28]
+        else:
+            self.FOV =[104/2, 104]
+
         self.screen_points = self.get_screen_img()
         # cx,cy,cz = longLatToCartesian(self.center.lon, self.center.lat)
         # vx,vy,vz = longLatToCartesian(self.vertexList[0].lon, self.vertexList[0].lat)
@@ -102,6 +117,10 @@ class polFace():
     def getSphericalCordofGnomonic(self, convertedScreenCoord):
         x = convertedScreenCoord.T[0]
         y = convertedScreenCoord.T[1]
+        print(np.max(convertedScreenCoord.T[0]))
+        print(np.max(convertedScreenCoord.T[0]))
+        self.trans = np.max(convertedScreenCoord.T[0])
+        self.scale = (self.height/2) * (1/self.trans)
         plt.plot(x,y,'b.')
         rou = np.sqrt(x ** 2 + y ** 2)
         c = np.arctan(rou)
@@ -194,7 +213,7 @@ class polFace():
         #     B_idx = 2097151
     
         flat_img = np.reshape(self.frame, [-1, self.frame_channel])
-        print(len(flat_img), np.shape(A_idx), np.shape(B_idx), np.shape(C_idx), np.shape(D_idx))
+        # print(len(flat_img), np.shape(A_idx), np.shape(B_idx), np.shape(C_idx), np.shape(D_idx))
 
         for idx in range(0,len(A_idx)):
             if A_idx[idx] >= len(flat_img) :
@@ -253,14 +272,44 @@ class polFace():
         for vert in self.vertexList:
             xyPoints.append(self.getGnomonicCordofSpherical(vert.lon, vert.lat))
         center_pointXY = self.getGnomonicCordofSpherical(self.center.lon, self.center.lat)
-        self.transformSqr(xyPoints,xyPoints,prjImage,imageOut)
+        
+        
+        # exit()
+        if(self.faceType == "TETRA" or self.faceType == "ICOS" or self.faceType == "OCTA"):
+            faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
+            (((xyPoints[1])[0] + self.trans) * self.scale,((xyPoints[1])[1] + self.trans) * self.scale),
+            (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale)]
+            print(xyPoints,"\n", faceVert)
+            self.transformTri(faceVert,faceVert,prjImage,imageOut)
+        elif(self.faceType == "CUBE"):
+            # scale = 850/2
+            # trans = 1
+            faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
+            (((xyPoints[1])[0] + self.trans) * self.scale,((xyPoints[1])[1] + self.trans) * self.scale),
+            (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale),
+            (((xyPoints[3])[0] + self.trans) * self.scale,((xyPoints[3])[1] + self.trans) * self.scale)]
+            print(xyPoints,"\n", faceVert)
+            self.transformSqr(faceVert,faceVert,prjImage,imageOut)
+        elif(self.faceType == "DODE"):
+            faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
+            (((xyPoints[1])[0] + self.trans) * self.scale,((xyPoints[1])[1] + self.trans) * self.scale),
+            (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale),
+            (((xyPoints[3])[0] + self.trans) * self.scale,((xyPoints[3])[1] + self.trans) * self.scale),
+            (((xyPoints[4])[0] + self.trans) * self.scale,((xyPoints[4])[1] + self.trans) * self.scale)]
+            print(xyPoints,"\n", faceVert)
+            self.transformPent(faceVert,faceVert,prjImage,imageOut)
+        else:
+            print("not exist")
+
+
         imageOut.save("images/test11.jpg")
 
 
     def transformTri(self, src_tri, dst_tri, src_img, dst_img):
+        print("tranforming trianglar face")
         ((x11,x12), (x21,x22), (x31,x32)) = src_tri
         ((y11,y12), (y21,y22), (y31,y32)) = dst_tri
-
+        print(src_tri)
         M = np.array([
                          [y11, y12, 1, 0, 0, 0],
                          [y21, y22, 1, 0, 0, 0],
@@ -277,9 +326,10 @@ class polFace():
         src_copy = src_img.copy()
         srcdraw = ImageDraw.Draw(src_copy)
         srcdraw.polygon(src_tri)
-        # src_copy.show()
+        src_copy.show()
         transformed = src_img.transform(dst_img.size, Image.AFFINE, A)
-
+        # transformed.show()
+        # exit()
         mask = Image.new('1', dst_img.size)
         maskdraw = ImageDraw.Draw(mask)
         maskdraw.polygon(dst_tri, fill=255)
@@ -299,6 +349,16 @@ class polFace():
                                                         (dst_Sqr[1][0],dst_Sqr[1][1]),
                                                         (dst_Sqr[2][0],dst_Sqr[2][1]),
                                                         (dst_Sqr[3][0],dst_Sqr[3][1]))
+        srcSqr_P =  (((src_Sqr[0])[0],(src_Sqr[0])[1]),
+            ((src_Sqr[1])[0],(src_Sqr[1])[1]),
+            ((src_Sqr[2])[0],(src_Sqr[2])[1]),
+            ((src_Sqr[3])[0],(src_Sqr[3])[1]))
+
+        dstSqr_P =  ((dst_Sqr[0][0],dst_Sqr[0][1]),
+            (dst_Sqr[1][0],dst_Sqr[1][1]),
+            (dst_Sqr[2][0],dst_Sqr[2][1]),
+            (dst_Sqr[3][0],dst_Sqr[3][1]))
+
         src_SqrArr = [((src_Sqr[0])[0],(src_Sqr[0])[1]),
                                                         ((src_Sqr[1])[0],(src_Sqr[1])[1]),
                                                         ((src_Sqr[2])[0],(src_Sqr[2])[1]),
@@ -308,38 +368,47 @@ class polFace():
                                                         (dst_Sqr[1][0],dst_Sqr[1][1]),
                                                         (dst_Sqr[2][0],dst_Sqr[2][1]),
                                                         (dst_Sqr[3][0],dst_Sqr[3][1])]
+        # M = np.array([
+        #                  [y11, y12, 1,0, 0, 0, 0, 0],
+        #                  [y21, y22, 1,0, 0, 0, 0, 0],
+        #                  [y31, y32, 1,0, 0, 0, 0, 0],
+        #                  [y41, y42, 1,0, 0, 0, 0, 0],
+        #                  [0, 0, 0, 0, y11, y12, 1,0],
+        #                  [0, 0, 0, 0, y21, y22, 1,0],
+        #                  [0, 0, 0, 0, y31, y32, 1,0],
+        #                  [0, 0, 0, 0, y41, y42, 1,0]
+        #             ])
         M = np.array([
-                         [y11, y12, 1, 0, 0, 0, 0],
-                         [y21, y22, 1, 0, 0, 0, 0],
-                         [y31, y32, 1, 0, 0, 0, 0],
-                         [y41, y42, 1, 0, 0, 0, 0],
-                         [0, 0, 0, 0, y11, y12, 1],
-                         [0, 0, 0, 0, y21, y22, 1],
-                         [0, 0, 0, 0, y31, y32, 1],
-                         [0, 0, 0, 0, y41, y42, 1]
-                    ])
+                         [y11, y12, 1, 0, 0, 0],
+                         [y21, y22, 1, 0, 0, 0],
+                         [y31, y32, 1, 0, 0, 0],
+                         [0, 0, 0, y11, y12, 1],
+                         [0, 0, 0, y21, y22, 1],
+                         [0, 0, 0, y31, y32, 1],
+                       ])
 
-        y = np.array([x11, x21, x31, x41, x12, x22, x32, x42])
 
-        # A = np.linalg.solve(M, y)
+        y = np.array([x11, x21, x31, x12, x22, x32])
+     
+        A = np.linalg.solve(M, y)
 
         src_copy = src_img.copy()
         srcdraw = ImageDraw.Draw(src_copy)
-        srcdraw.polygon(src_SqrArr)
+        srcdraw.polygon(srcSqr_P)
         src_copy.show()
-        # transformed = src_img.transform(dst_img.size, Image.AFFINE, A)
-
+        transformed = src_img.transform(dst_img.size, Image.AFFINE, A)
+        # transformed.show()
         mask = Image.new('1', dst_img.size)
         maskdraw = ImageDraw.Draw(mask)
-        maskdraw.polygon(dst_SqrArr, fill=255)
-
+        maskdraw.polygon(dstSqr_P, fill=255)
+        # maskdraw.show()
         dstdraw = ImageDraw.Draw(dst_img)
-        dstdraw.polygon(dst_SqrArr, fill=(255,255,255))
+        dstdraw.polygon(dstSqr_P, fill=(255,255,255))
         # dst_img.show()
-        # dst_img.paste(transformed, mask=mask)
+        dst_img.paste(transformed, mask=mask)
         # dst_img.show()
 
-def transformPent(self, src_Sqr, dst_Sqr, src_img, dst_img):
+    def transformPent(self, src_Sqr, dst_Sqr, src_img, dst_img):
         ((x11,x12), (x21,x22), (x31,x32), (x41,x42), (x51,x52)) = src_Sqr
         ((y11,y12), (y21,y22), (y31,y32), (y41,y42), (y51,y52)) = dst_Sqr
 
@@ -358,13 +427,13 @@ def transformPent(self, src_Sqr, dst_Sqr, src_img, dst_img):
 
         y = np.array([x11, x21, x31, x12, x22, x32, x42, x52])
 
-        A = np.linalg.solve(M, y)
+        # A = np.linalg.solve(M, y)
 
         src_copy = src_img.copy()
         srcdraw = ImageDraw.Draw(src_copy)
         srcdraw.polygon(src_Sqr)
-        # src_copy.show()
-        transformed = src_img.transform(dst_img.size, Image.AFFINE, A)
+        src_copy.show()
+        # transformed = src_img.transform(dst_img.size, Image.AFFINE, A)
 
         mask = Image.new('1', dst_img.size)
         maskdraw = ImageDraw.Draw(mask)
@@ -373,7 +442,7 @@ def transformPent(self, src_Sqr, dst_Sqr, src_img, dst_img):
         dstdraw = ImageDraw.Draw(dst_img)
         dstdraw.polygon(dst_Sqr, fill=(255,255,255))
         # dst_img.show()
-        dst_img.paste(transformed, mask=mask)
+        # dst_img.paste(transformed, mask=mask)
         # dst_img.show()
 # degrees = 180 / pi
 # asin1_3 = math.asin(1 / 3)
