@@ -9,6 +9,7 @@ from PIL import ImageDraw
 
 fig,ax = plt.subplots()
 pi_2 = pi * 0.5
+up = 1
 def longLatToCartesian(lon, lat):
         R=1
         phi = ((90 - lat)* pi)/180
@@ -27,22 +28,45 @@ def cartesianToLatLon(X,Y,Z):
     return lon, lat
 
 def distancePoint(x1,y1,z1,x2,y2,z2):
-   return math.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2 )
+    return math.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2 )
+def distancePoint(x1,y1,x2,y2):
+    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+def distancePointToLine(x0,y0,px1,py1,px2,py2):
+    numer = abs((px2 - px1)*(py1 - y0) - (px1 - x0)*(py2 - py1))
+    denum = math.sqrt(((px2 - px1)**2) + ((py2 - py1)**2))
+    return numer/denum
+def rotate(origin, point, angle):
+    """
+    Rotate a point counterclockwise by a given angle around a given origin.
+
+    The angle should be given in radians.
+    """
+    ox, oy = origin
+    px, py = point
+
+    qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
+    qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
+    return qx, qy
 class polVertex ():
+    
     def __init__(self,lonlat):
         self.vertex=np.array([lonlat[0], lonlat[1]])
         self.lon = lonlat[0]
         self.lat = lonlat[1]
 class polFace():
+
+    upClass = up
     """docstring for polFace"""
-    def __init__(self, polVertexList=[], faceType="TETRA"):
+    def __init__(self, polVertexList=[], faceType="TETRA", faceId = ""):
         self.vertexList = polVertexList
         self.center = self.calcCenter()
-        self.height = 850
-        self.width = 850
+        self.height = 850  * up
+        self.width = 850 * up
         self.faceType = faceType
+        self.faceId = faceId
         self.trans = 0
         self.scale = 1
+        self.faceMap = {}
         if(faceType == "CUBE"):
             self.FOV =[37/2, 37]
         elif(faceType == "TETRA"):
@@ -117,11 +141,12 @@ class polFace():
     def getSphericalCordofGnomonic(self, convertedScreenCoord):
         x = convertedScreenCoord.T[0]
         y = convertedScreenCoord.T[1]
-        print(np.max(convertedScreenCoord.T[0]))
-        print(np.max(convertedScreenCoord.T[0]))
+        # print(np.max(convertedScreenCoord.T[0]))
+        # print(np.max(convertedScreenCoord.T[0]))
         self.trans = np.max(convertedScreenCoord.T[0])
-        self.scale = (self.height/2) * (1/self.trans)
-        plt.plot(x,y,'b.')
+        self.scale = (self.height/2) * (1/self.trans) * up
+        print("trans: ", self.trans, "scale: ", self.scale)
+        # plt.plot(x,y,'b.')
         rou = np.sqrt(x ** 2 + y ** 2)
         c = np.arctan(rou)
         sin_c = np.sin(c)
@@ -139,7 +164,7 @@ class polFace():
         return np.array([lon, lat]).T
 
     def getSphericalCordofGnomonicXY(self, x, y):
-        print("what is this: ", convertedScreenCoord.T[0])
+        # print("what is this: ", convertedScreenCoord.T[0])
         plt.plot(x,y,'b.')
         rou = np.sqrt(x ** 2 + y ** 2)
         c = np.arctan(rou)
@@ -162,7 +187,7 @@ class polFace():
         lon = lon1 * np.pi/180
         lon1 = self.cp[0]
         lat1 = self.cp[1] 
-        print("lon, lat:" + str(lon1), lat1, lon, lat)       
+        # print("lon, lat:" + str(lon1), lat1, lon, lat)       
         # cos_c = (np.sin(lat1) * np.sin(lat)) + (np.cos(lat1) * np.cos(lat) * np.cos(lon - lon1))
         # x = (np.cos(lat) * np.sin(lon - lon1))/cos_c
         # y = ((np.cos(lon1) * np.sin(lon)) - (np.sin(lon1) * np.cos(lon) * np.cos(lat - lat1)))/cos_c
@@ -176,7 +201,7 @@ class polFace():
     def bilinear_interpolation(self, screen_coord):
         uf = np.mod(screen_coord.T[0],1) * self.frame_width  # long - width
         vf = np.mod(screen_coord.T[1],1) * self.frame_height  # lat - height
-        print(np.shape(vf), self.frame_width, np.shape(screen_coord.T[0]), np.shape(screen_coord[0]))
+        # print(np.shape(vf), self.frame_width, np.shape(screen_coord.T[0]), np.shape(screen_coord[0]))
         x0 = np.floor(uf).astype(int)  # coord of pixel to bottom left
         y0 = np.floor(vf).astype(int)
         x2 = np.add(x0, np.ones(uf.shape).astype(int))  # coords of pixel to top right
@@ -254,9 +279,10 @@ class polFace():
         # plt.show()
          # nfov
 
-    def projectOnToPlace(self, frame):
+    def projectOnToPlace(self, frame,faceMapIn,imageOut):
+        self.faceMap = faceMapIn
         # print(frame)
-        imageOut = Image.new("RGB", (int(850*3),int(850*2)),"white")
+        # imageOut = Image.new("RGB", (int(up*850*3),int(up*850*2)),"white")
 
         self.frame = frame
         self.frame_height = frame.shape[0]
@@ -275,12 +301,63 @@ class polFace():
         
         
         # exit()
-        if(self.faceType == "TETRA" or self.faceType == "ICOS" or self.faceType == "OCTA"):
+        if(self.faceType == "TETRA" or self.faceType == "ICOS" ):
             faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
             (((xyPoints[1])[0] + self.trans) * self.scale,((xyPoints[1])[1] + self.trans) * self.scale),
             (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale)]
-            print(xyPoints,"\n", faceVert)
+            # print(xyPoints,"\n", faceVert)
             self.transformTri(faceVert,faceVert,prjImage,imageOut)
+
+        elif(self.faceType == "OCTA"):
+            faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
+            (((xyPoints[1])[0] + self.trans) * self.scale,((xyPoints[1])[1] + self.trans) * self.scale),
+            (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale)]
+            # print(xyPoints,"\n", faceVert)
+            ((x11,x12), (x21,x22), (x31,x32)) = faceVert
+            if (self.faceId == "A"):
+                xt = up * (850 + 425 + 425/2)
+                yt = up * (850-100)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+            elif (self.faceId == "B"):
+                aFace = self.faceMap["A"]
+                (z11,z12), (z21,z22), (z31,z32) = aFace
+                xt = distancePoint(z11,z12, z21,z22)
+                faceVertMove = (z11,z12), (z11 + xt,z12), (z31,z32)
+            elif (self.faceId == "C"): 
+                aFace = self.faceMap["A"]
+                (z11,z12), (z21,z22), (z31,z32) = aFace
+                yt = distancePointToLine(z11,z12, z21,z22,z31,z32)
+                faceVertMove = (z11,z12 - yt * 2), (z21,z22),(z31,z32)
+            elif (self.faceId == "D"):     
+                bFace = self.faceMap["B"]
+                (z11,z12), (z21,z22), (z31,z32) = bFace
+                xt = distancePoint(z11,z12, z21,z22)
+                faceVertMove = (z31 + xt,z32), (z31,z32), (z21,z22)
+            elif (self.faceId == "E"):     
+                aFace = self.faceMap["A"]
+                (z11,z12), (z21,z22), (z31,z32) = aFace
+                xt = distancePoint(z11, z12, z21, z22)
+                faceVertMove = (z11,z12), (z21,z22), (z11 - xt,z12)
+            elif (self.faceId == "F"):     
+                eFace = self.faceMap["E"]
+                (z11,z12), (z21,z22), (z31,z32) = eFace
+                yt = distancePointToLine(z21,z22, z11,z12,z31,z32)
+                faceVertMove = (z11,z12), (z31,z32), (z21 ,z22 + yt*2)
+            elif (self.faceId == "G"):     
+                eFace = self.faceMap["E"]
+                (z11,z12), (z21,z22), (z31,z32) = eFace
+                xt = distancePoint(z11, z12, z21, z22)
+                faceVertMove = (z21 - xt,z22), (z31,z32), (z21 ,z22)
+            elif (self.faceId == "H"):     
+                gFace = self.faceMap["G"]
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = distancePoint(z11, z12, z21, z22)
+                faceVertMove = (z11, z12), (z21 - xt ,z22), (z21 ,z22)
+
+            self.transformTri(faceVert,faceVertMove,prjImage,imageOut)
+            self.faceMap[self.faceId] = faceVertMove
+
+            # if :
         elif(self.faceType == "CUBE"):
             # scale = 850/2
             # trans = 1
@@ -288,28 +365,276 @@ class polFace():
             (((xyPoints[1])[0] + self.trans) * self.scale,((xyPoints[1])[1] + self.trans) * self.scale),
             (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale),
             (((xyPoints[3])[0] + self.trans) * self.scale,((xyPoints[3])[1] + self.trans) * self.scale)]
-            print(xyPoints,"\n", faceVert)
-            self.transformSqr(faceVert,faceVert,prjImage,imageOut)
+
+            ((x11,x12), (x21,x22), (x31,x32), (x41,x42)) = faceVert
+            if (self.faceId == "A"):
+                xt  = up * (850 * 2 + 425)
+                yt  = up * (850/2)
+
+                # faceVertMove = ((x31 + xt, x32 + yt), (x21 + xt, x22 + yt), (x11 + xt, x12 + yt), (x41 + xt, x42 + yt))
+                # faceVertMove = ((x21 + xt, x22 + yt), (x31 + xt, x32 + yt), (x41 + xt, x42 + yt), (x11 + xt, x12 + yt))
+                faceVertMove = ((x41 + xt, x42 + yt), (x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt))
+
+            elif (self.faceId == "B"):
+                aFace = self.faceMap["A"]
+                yt = self.scale * 2
+                (z41,z42), (z11,z12), (z21,z22), (z31,z32) = aFace
+
+                faceVertMove = (z11,z12 + yt), (z21,z22 + yt), (z31,z32 + yt), (z41,z42 + yt)
+            elif (self.faceId == "F"):
+                bFace = self.faceMap["B"]
+                yt = self.scale * 2
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42) = bFace
+
+                faceVertMove = (z11,z12 + yt), (z21,z22 + yt), (z31,z32 + yt), (z41,z42 + yt)
+            elif (self.faceId == "C"):
+                bFace = self.faceMap["B"]
+                xt = self.scale *2
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42) = bFace
+                    
+                faceVertMove = (z11 + xt, z12), (z21 + xt, z22), (z31 + xt, z32), (z41 + xt, z42)
+            elif (self.faceId == "E"):
+                bFace = self.faceMap["B"]
+                xt = self.scale *2
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42) = bFace
+                    
+                faceVertMove = (z11 - xt, z12), (z21 - xt, z22), (z31 - xt, z32), (z41 - xt, z42)
+            elif (self.faceId == "D"):
+                eFace = self.faceMap["E"]
+                xt = self.scale *2
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42) = eFace
+                    
+                faceVertMove = (z11 - xt, z12), (z21 - xt, z22), (z31 - xt, z32), (z41 - xt, z42)
+
+            # print(xyPoints,"\n", faceVert)
+            self.transformSqr(faceVert,faceVertMove,prjImage,imageOut)
         elif(self.faceType == "DODE"):
+
             faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
             (((xyPoints[1])[0] + self.trans) * self.scale,((xyPoints[1])[1] + self.trans) * self.scale),
             (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale),
             (((xyPoints[3])[0] + self.trans) * self.scale,((xyPoints[3])[1] + self.trans) * self.scale),
             (((xyPoints[4])[0] + self.trans) * self.scale,((xyPoints[4])[1] + self.trans) * self.scale)]
-            print(xyPoints,"\n", faceVert)
-            self.transformPent(faceVert,faceVert,prjImage,imageOut)
+            # print(xyPoints,"\n", faceVert)
+            xt = up * ((850 + 425 ))
+            yt = up * (850 + 425/2 )
+            ((x11,x12), (x21,x22), (x31,x32), (x41,x42), (x51,x52)) = faceVert
+            if (self.faceId == "A"):
+                # xt = up * ((850 + 425 - 198))
+                # yt = up * (850 )
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+            elif (self.faceId == "H"):
+                aFace = self.faceMap["A"]
+                # xt = up * ((850))
+                # yt = up * (850)
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
+                (x11,x12) = rotate((cx,cy),(x11,x12),1.25664)
+                (x21,x22) = rotate((cx,cy),(x21,x22),1.25664)
+                (x31,x32) = rotate((cx,cy),(x31,x32),1.25664)
+                (x41,x42) = rotate((cx,cy),(x41,x42),1.25664)
+                (x51,x52) = rotate((cx,cy),(x51,x52),1.25664)
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                xt = z31 - x21
+                yt = z32 - x22
+                
+                # xt -= distancePoint(z11,z12,z41,z42) 
+
+                # faceVertMove = (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+            elif (self.faceId ==  "D"):
+                aFace = self.faceMap["A"]
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
+
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (x11,x12) = rotate((cx,cy),(x11,x12),pi)
+                (x21,x22) = rotate((cx,cy),(x21,x22),pi)
+                (x31,x32) = rotate((cx,cy),(x31,x32),pi)
+                (x41,x42) = rotate((cx,cy),(x41,x42),pi)
+                (x51,x52) = rotate((cx,cy),(x51,x52),pi)
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                xt = 0
+                # print(z12,z22,z32,z42,z52,x12,x52)
+                yt = z22 - x12
+                # faceVertMove = (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+
+            elif (self.faceId ==  "B"):
+                aFace = self.faceMap["A"]
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (x11,x12) = rotate((cx,cy),(x11,x12),-2*pi/5 )
+                (x21,x22) = rotate((cx,cy),(x21,x22),-2*pi/5 )
+                (x31,x32) = rotate((cx,cy),(x31,x32),-2*pi/5 )
+                (x41,x42) = rotate((cx,cy),(x41,x42),-2*pi/5 )
+                (x51,x52) = rotate((cx,cy),(x51,x52),-2*pi/5 )
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+
+                xt = z11 - x11 
+                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
+                yt = z12 - x12
+                # faceVertMove = (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
+            elif (self.faceId ==  "C"):
+                aFace = self.faceMap["A"]
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (x11,x12) = rotate((cx,cy),(x11,x12),-1*pi/10 )
+                (x21,x22) = rotate((cx,cy),(x21,x22),-1*pi/10 )
+                (x31,x32) = rotate((cx,cy),(x31,x32),-1*pi/10 )
+                (x41,x42) = rotate((cx,cy),(x41,x42),-1*pi/10 )
+                (x51,x52) = rotate((cx,cy),(x51,x52),-1*pi/10 )
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+
+                xt = z51 - x21  
+                yt = z52 - x22
+                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
+            elif (self.faceId ==  "F"):
+                aFace = self.faceMap["A"]
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (x11,x12) = rotate((cx,cy),(x11,x12),pi/10 )
+                (x21,x22) = rotate((cx,cy),(x21,x22),pi/10 )
+                (x31,x32) = rotate((cx,cy),(x31,x32),pi/10 )
+                (x41,x42) = rotate((cx,cy),(x41,x42),pi/10 )
+                (x51,x52) = rotate((cx,cy),(x51,x52),pi/10 )
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+
+                xt = z41 - x21
+                yt = z42 - x22
+                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
+
+            elif (self.faceId ==  "G"):
+                aFace = self.faceMap["J"]
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                # (x11,x12) = rotate((cx,cy),(x11,x12),-2*pi/5 )
+                # (x21,x22) = rotate((cx,cy),(x21,x22),-2*pi/5 )
+                # (x31,x32) = rotate((cx,cy),(x31,x32),-2*pi/5 )
+                # (x41,x42) = rotate((cx,cy),(x41,x42),-2*pi/5 )
+                # (x51,x52) = rotate((cx,cy),(x51,x52),-2*pi/5 )
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+
+                xt = z21 - x51
+                yt = z22 - x52
+                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
+            elif (self.faceId ==  "I"):
+                aFace = self.faceMap["J"]
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (x11,x12) = rotate((cx,cy),(x11,x12),-1*pi/10 - 1*pi/5 - 4*pi/5)
+                (x21,x22) = rotate((cx,cy),(x21,x22),-1*pi/10 - 1*pi/5 - 4*pi/5)
+                (x31,x32) = rotate((cx,cy),(x31,x32),-1*pi/10 - 1*pi/5 - 4*pi/5)
+                (x41,x42) = rotate((cx,cy),(x41,x42),-1*pi/10 - 1*pi/5 - 4*pi/5)
+                (x51,x52) = rotate((cx,cy),(x51,x52),-1*pi/10 - 1*pi/5 - 4*pi/5)
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+
+                xt = z51 - x41
+                yt = z52 - x42
+                # print(x12,x22,x32,x42,x52)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
+            elif (self.faceId ==  "J"):
+                aFace = self.faceMap["A"]
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (x11,x12) = rotate((cx,cy),(x11,x12),-1*pi/5 -4*pi/5 )
+                (x21,x22) = rotate((cx,cy),(x21,x22),-1*pi/5 -4*pi/5 )
+                (x31,x32) = rotate((cx,cy),(x31,x32),-1*pi/5 -4*pi/5 )
+                (x41,x42) = rotate((cx,cy),(x41,x42),-1*pi/5 -4*pi/5 )
+                (x51,x52) = rotate((cx,cy),(x51,x52),-1*pi/5 -4*pi/5 )
+    
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+
+                xt = 0
+                yt = 0
+                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
+            elif (self.faceId ==  "K"):
+                aFace = self.faceMap["J"]
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (x11,x12) = rotate((cx,cy),(x11,x12),pi )
+                (x21,x22) = rotate((cx,cy),(x21,x22),pi )
+                (x31,x32) = rotate((cx,cy),(x31,x32),pi )
+                (x41,x42) = rotate((cx,cy),(x41,x42),pi )
+                (x51,x52) = rotate((cx,cy),(x51,x52),pi )
+
+                (x11,x12) = rotate((cx,cy),(x11,x12),2*pi/5 )
+                (x21,x22) = rotate((cx,cy),(x21,x22),2*pi/5 )
+                (x31,x32) = rotate((cx,cy),(x31,x32),2*pi/5 )
+                (x41,x42) = rotate((cx,cy),(x41,x42),2*pi/5 )
+                (x51,x52) = rotate((cx,cy),(x51,x52),2*pi/5 )
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+
+                xt = z31 - x51
+                yt = z32 - x52
+
+                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
+            elif (self.faceId ==  "L"):
+                aFace = self.faceMap["J"]
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (x11,x12) = rotate((cx,cy),(x11,x12),pi/10 - pi)
+                (x21,x22) = rotate((cx,cy),(x21,x22),pi/10 - pi)
+                (x31,x32) = rotate((cx,cy),(x31,x32),pi/10 - pi)
+                (x41,x42) = rotate((cx,cy),(x41,x42),pi/10 - pi)
+                (x51,x52) = rotate((cx,cy),(x51,x52),pi/10 - pi)
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+
+                xt = z51 - x31
+                yt = z52 - x32
+                # print(x12,x22,x32,x42,x52)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
+            elif (self.faceId ==  "E"):
+                aFace = self.faceMap["J"]
+                (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (x11,x12) = rotate((cx,cy),(x11,x12),1*pi/5 + 2*pi/5)
+                (x21,x22) = rotate((cx,cy),(x21,x22),1*pi/5 + 2*pi/5)
+                (x31,x32) = rotate((cx,cy),(x31,x32),1*pi/5 + 2*pi/5)
+                (x41,x42) = rotate((cx,cy),(x41,x42),1*pi/5 + 2*pi/5)
+                (x51,x52) = rotate((cx,cy),(x51,x52),1*pi/5 + 2*pi/5)
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+
+                xt = z21 - x31
+                yt = z22 - x32
+                # print(x12,x22,x32,x42,x52)
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
+
+            self.transformPent(faceVert,faceVertMove,prjImage,imageOut)
+            self.faceMap[self.faceId] = faceVertMove
+
         else:
             print("not exist")
-
-
         imageOut.save("images/test11.jpg")
 
+    def getFaceMap(self):
+        return self.faceMap
+
+    def setFaceMap(self,faceMapIn):
+        self.faceMap = faceMapIn
 
     def transformTri(self, src_tri, dst_tri, src_img, dst_img):
-        print("tranforming trianglar face")
+        # print("tranforming trianglar face")
         ((x11,x12), (x21,x22), (x31,x32)) = src_tri
         ((y11,y12), (y21,y22), (y31,y32)) = dst_tri
-        print(src_tri)
+        # print(src_tri)
+        # print(dst_tri)
+        # print("EndParam")
+
         M = np.array([
                          [y11, y12, 1, 0, 0, 0],
                          [y21, y22, 1, 0, 0, 0],
@@ -320,13 +645,11 @@ class polFace():
                     ])
 
         y = np.array([x11, x21, x31, x12, x22, x32])
-
         A = np.linalg.solve(M, y)
-
         src_copy = src_img.copy()
         srcdraw = ImageDraw.Draw(src_copy)
         srcdraw.polygon(src_tri)
-        src_copy.show()
+        # src_copy.show()
         transformed = src_img.transform(dst_img.size, Image.AFFINE, A)
         # transformed.show()
         # exit()
@@ -340,121 +663,38 @@ class polFace():
         dst_img.paste(transformed, mask=mask)
         # dst_img.show()
 
+    
     def transformSqr(self, src_Sqr, dst_Sqr, src_img, dst_img):
-        ((x11,x12), (x21,x22), (x31,x32), (x41,x42)) = (((src_Sqr[0])[0],(src_Sqr[0])[1]),
-                                                        ((src_Sqr[1])[0],(src_Sqr[1])[1]),
-                                                        ((src_Sqr[2])[0],(src_Sqr[2])[1]),
-                                                        ((src_Sqr[3])[0],(src_Sqr[3])[1]))
-        ((y11,y12), (y21,y22), (y31,y32), (y41,y42)) = ((dst_Sqr[0][0],dst_Sqr[0][1]),
-                                                        (dst_Sqr[1][0],dst_Sqr[1][1]),
-                                                        (dst_Sqr[2][0],dst_Sqr[2][1]),
-                                                        (dst_Sqr[3][0],dst_Sqr[3][1]))
-        srcSqr_P =  (((src_Sqr[0])[0],(src_Sqr[0])[1]),
-            ((src_Sqr[1])[0],(src_Sqr[1])[1]),
-            ((src_Sqr[2])[0],(src_Sqr[2])[1]),
-            ((src_Sqr[3])[0],(src_Sqr[3])[1]))
+        print("transforming square face")
+        print(src_Sqr)
+        print(dst_Sqr);
+        print("EndParam")
+        ((x11,x12), (x21,x22), (x31,x32), (x41,x42)) = src_Sqr
+        ((y11,y12), (y21,y22), (y31,y32), (y41,y42)) = dst_Sqr
+        triInSqr = ((x11,x12), (x21,x22), (x31,x32))
+        triInSqr1 = ((x11,x12), (x41,x42), (x31,x32))
+        triInSqrMove = ((y11,y12), (y21,y22), (y31,y32))
+        triInSqr1Move = ((y11,y12), (y41,y42), (y31,y32))
+        
 
-        dstSqr_P =  ((dst_Sqr[0][0],dst_Sqr[0][1]),
-            (dst_Sqr[1][0],dst_Sqr[1][1]),
-            (dst_Sqr[2][0],dst_Sqr[2][1]),
-            (dst_Sqr[3][0],dst_Sqr[3][1]))
-
-        src_SqrArr = [((src_Sqr[0])[0],(src_Sqr[0])[1]),
-                                                        ((src_Sqr[1])[0],(src_Sqr[1])[1]),
-                                                        ((src_Sqr[2])[0],(src_Sqr[2])[1]),
-                                                        ((src_Sqr[3])[0],(src_Sqr[3])[1])]
-
-        dst_SqrArr = [(dst_Sqr[0][0],dst_Sqr[0][1]),
-                                                        (dst_Sqr[1][0],dst_Sqr[1][1]),
-                                                        (dst_Sqr[2][0],dst_Sqr[2][1]),
-                                                        (dst_Sqr[3][0],dst_Sqr[3][1])]
-        # M = np.array([
-        #                  [y11, y12, 1,0, 0, 0, 0, 0],
-        #                  [y21, y22, 1,0, 0, 0, 0, 0],
-        #                  [y31, y32, 1,0, 0, 0, 0, 0],
-        #                  [y41, y42, 1,0, 0, 0, 0, 0],
-        #                  [0, 0, 0, 0, y11, y12, 1,0],
-        #                  [0, 0, 0, 0, y21, y22, 1,0],
-        #                  [0, 0, 0, 0, y31, y32, 1,0],
-        #                  [0, 0, 0, 0, y41, y42, 1,0]
-        #             ])
-        M = np.array([
-                         [y11, y12, 1, 0, 0, 0],
-                         [y21, y22, 1, 0, 0, 0],
-                         [y31, y32, 1, 0, 0, 0],
-                         [0, 0, 0, y11, y12, 1],
-                         [0, 0, 0, y21, y22, 1],
-                         [0, 0, 0, y31, y32, 1],
-                       ])
+        
+        self.transformTri(triInSqr, triInSqrMove, src_img, dst_img)
+        self.transformTri(triInSqr1, triInSqr1Move, src_img, dst_img)    
+        self.faceMap[self.faceId] = dst_Sqr
 
 
-        y = np.array([x11, x21, x31, x12, x22, x32])
-     
-        A = np.linalg.solve(M, y)
-
-        src_copy = src_img.copy()
-        srcdraw = ImageDraw.Draw(src_copy)
-        srcdraw.polygon(srcSqr_P)
-        src_copy.show()
-        transformed = src_img.transform(dst_img.size, Image.AFFINE, A)
-        # transformed.show()
-        mask = Image.new('1', dst_img.size)
-        maskdraw = ImageDraw.Draw(mask)
-        maskdraw.polygon(dstSqr_P, fill=255)
-        # maskdraw.show()
-        dstdraw = ImageDraw.Draw(dst_img)
-        dstdraw.polygon(dstSqr_P, fill=(255,255,255))
-        # dst_img.show()
-        dst_img.paste(transformed, mask=mask)
-        # dst_img.show()
+        
 
     def transformPent(self, src_Sqr, dst_Sqr, src_img, dst_img):
+        print("transforming pentagon face")
         ((x11,x12), (x21,x22), (x31,x32), (x41,x42), (x51,x52)) = src_Sqr
         ((y11,y12), (y21,y22), (y31,y32), (y41,y42), (y51,y52)) = dst_Sqr
-
-        M = np.array([
-                         [y11, y12, 1, 0, 0, 0, 0, 0],
-                         [y21, y22, 1, 0, 0, 0, 0, 0],
-                         [y31, y32, 1, 0, 0, 0, 0, 0],
-                         [y41, y42, 1, 0, 0, 0, 0, 0],
-                         [y51, y52, 1, 0, 0, 0, 0, 0],
-                         [0, 0, 0, 0, 0, y11, y12, 1],
-                         [0, 0, 0, 0, 0, y21, y22, 1],
-                         [0, 0, 0, 0, 0, y31, y32, 1],
-                         [0, 0, 0, 0, 0, y41, y42, 1],
-                         [0, 0, 0, 0, 0, y51, y52, 1]
-                    ])
-
-        y = np.array([x11, x21, x31, x12, x22, x32, x42, x52])
-
-        # A = np.linalg.solve(M, y)
-
-        src_copy = src_img.copy()
-        srcdraw = ImageDraw.Draw(src_copy)
-        srcdraw.polygon(src_Sqr)
-        src_copy.show()
-        # transformed = src_img.transform(dst_img.size, Image.AFFINE, A)
-
-        mask = Image.new('1', dst_img.size)
-        maskdraw = ImageDraw.Draw(mask)
-        maskdraw.polygon(dst_Sqr, fill=255)
-
-        dstdraw = ImageDraw.Draw(dst_img)
-        dstdraw.polygon(dst_Sqr, fill=(255,255,255))
-        # dst_img.show()
-        # dst_img.paste(transformed, mask=mask)
-        # dst_img.show()
-# degrees = 180 / pi
-# asin1_3 = math.asin(1 / 3)
-# phi1 = math.atan(math.sqrt(1/2)) * degrees
-# cube = [[0, phi1], [90, phi1], [180, phi1], [-90, phi1],
-#   [0, -phi1], [90, -phi1], [180, -phi1], [-90, -phi1]]
-
-# [ [0, 3, 2, 1], # N
-#   [0, 1, 5, 4],
-#   [1, 2, 6, 5],
-#   [2, 3, 7, 6],
-#   [3, 0, 4, 7],
-#   [4, 5, 6, 7]]  # S
-
-# f1 = polFace([polVertex(cube[0]), polVertex(cube[3]), polVertex(cube[2]), polVertex(cube[1])])
+        triA = ((x11,x12), (x21,x22), (x31,x32))
+        triB = ((x11,x12), (x31,x32), (x41,x42))
+        triC = ((x11,x12), (x41,x42), (x51,x52))
+        triA_Move = ((y11,y12), (y21,y22), (y31,y32))
+        triB_Move = ((y11,y12), (y31,y32), (y41,y42))
+        triC_Move = ((y11,y12), (y41,y42), (y51,y52))
+        self.transformTri(triA, triA_Move, src_img, dst_img)
+        self.transformTri(triB, triB_Move, src_img, dst_img) 
+        self.transformTri(triC, triC_Move, src_img, dst_img)
