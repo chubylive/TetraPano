@@ -5,6 +5,7 @@ import math
 from math import pi
 import imageio as im
 import matplotlib.pyplot as plt
+from PIL import Image
 
  # # # Icosohedron
 sign = lambda x: math.copysign(1, x)
@@ -61,7 +62,7 @@ cartIcos = [[1,0,0,],
 for elm in cartIcos:
         polIcos.append(cartesianToLatLon(elm[1], elm[2], elm[0]))
 
-print(polIcos)
+# print(polIcos)
 
 icosahedronFacesPointUp = [ [0, 1, 2], [0, 2, 3], [0, 3, 4], [0, 4, 5], [0, 5, 1],
 [1, 7, 2], [2, 8, 3], [3, 9, 4], [4, 10, 5], [5, 11, 1], [7, 2, 8], [8, 3, 9], [9, 4, 10], [10, 5, 11], [11, 1, 7], 
@@ -95,49 +96,56 @@ for i in range(0,10):
         phi = (i * 36 + 180) % 360 - 180
         icosahedronVert.append([phi,(theta if i & 1 else -theta)])
 
-f1 = polFace([polVertex(icosahedronVert[0]), polVertex(icosahedronVert[3]), polVertex(icosahedronVert[11])],"ICOS")
-f2 = polFace([polVertex(icosahedronVert[0]), polVertex(icosahedronVert[5]), polVertex(icosahedronVert[3])],"ICOS")
-f3 = polFace([polVertex(icosahedronVert[0]), polVertex(icosahedronVert[7]), polVertex(icosahedronVert[5])],"ICOS")
-f4 = polFace([polVertex(icosahedronVert[0]), polVertex(icosahedronVert[9]), polVertex(icosahedronVert[7])],"ICOS")
-f5 = polFace([polVertex(icosahedronVert[0]), polVertex(icosahedronVert[11]), polVertex(icosahedronVert[9])],"ICOS")
-f6 = polFace([polVertex(icosahedronVert[2]), polVertex(icosahedronVert[11]), polVertex(icosahedronVert[3])],"ICOS")
-f7 = polFace([polVertex(icosahedronVert[3]), polVertex(icosahedronVert[4]), polVertex(icosahedronVert[2])],"ICOS")
-f8 = polFace([polVertex(icosahedronVert[4]), polVertex(icosahedronVert[3]), polVertex(icosahedronVert[5])],"ICOS")
-f9 = polFace([polVertex(icosahedronVert[5]), polVertex(icosahedronVert[6]), polVertex(icosahedronVert[4])],"ICOS")
-f10 =polFace([polVertex(icosahedronVert[6]), polVertex(icosahedronVert[5]), polVertex(icosahedronVert[7])],"ICOS")
-f11 =polFace([polVertex(icosahedronVert[7]), polVertex(icosahedronVert[8]), polVertex(icosahedronVert[6])],"ICOS")
-f12 =polFace([polVertex(icosahedronVert[8]), polVertex(icosahedronVert[7]), polVertex(icosahedronVert[9])],"ICOS")
-f13 =polFace([polVertex(icosahedronVert[9]), polVertex(icosahedronVert[10]), polVertex(icosahedronVert[8])],"ICOS")
-f14 =polFace([polVertex(icosahedronVert[10]), polVertex(icosahedronVert[9]), polVertex(icosahedronVert[11])],"ICOS")
-f15 =polFace([polVertex(icosahedronVert[11]), polVertex(icosahedronVert[2]), polVertex(icosahedronVert[10])],"ICOS")
-f16 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[2]), polVertex(icosahedronVert[4])],"ICOS")
-f17 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[4]), polVertex(icosahedronVert[6])],"ICOS")
-f18 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[6]), polVertex(icosahedronVert[8])],"ICOS")
-f19 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[8]), polVertex(icosahedronVert[10])],"ICOS")
-f20 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[10]), polVertex(icosahedronVert[2])],"ICOS")
+f1 = polFace([polVertex(icosahedronVert[0]), polVertex(icosahedronVert[3]), polVertex(icosahedronVert[11])],"ICOS","A")
+f2 = polFace([polVertex(icosahedronVert[0]), polVertex(icosahedronVert[5]), polVertex(icosahedronVert[3])],"ICOS","B")
+f3 = polFace([polVertex(icosahedronVert[0]), polVertex(icosahedronVert[7]), polVertex(icosahedronVert[5])],"ICOS","C")
+f4 = polFace([polVertex(icosahedronVert[0]), polVertex(icosahedronVert[9]), polVertex(icosahedronVert[7])],"ICOS","D")
+f5 = polFace([polVertex(icosahedronVert[0]), polVertex(icosahedronVert[11]), polVertex(icosahedronVert[9])],"ICOS","E")
+f6 = polFace([polVertex(icosahedronVert[2]), polVertex(icosahedronVert[11]), polVertex(icosahedronVert[3])],"ICOS","F")
+f7 = polFace([polVertex(icosahedronVert[3]), polVertex(icosahedronVert[4]), polVertex(icosahedronVert[2])],"ICOS","G")
+f8 = polFace([polVertex(icosahedronVert[4]), polVertex(icosahedronVert[3]), polVertex(icosahedronVert[5])],"ICOS","H")
+f9 = polFace([polVertex(icosahedronVert[5]), polVertex(icosahedronVert[6]), polVertex(icosahedronVert[4])],"ICOS","I")
+f10 =polFace([polVertex(icosahedronVert[6]), polVertex(icosahedronVert[5]), polVertex(icosahedronVert[7])],"ICOS","J")
+f11 =polFace([polVertex(icosahedronVert[7]), polVertex(icosahedronVert[8]), polVertex(icosahedronVert[6])],"ICOS","K")
+f12 =polFace([polVertex(icosahedronVert[8]), polVertex(icosahedronVert[7]), polVertex(icosahedronVert[9])],"ICOS","L")
+f13 =polFace([polVertex(icosahedronVert[9]), polVertex(icosahedronVert[10]), polVertex(icosahedronVert[8])],"ICOS","M")
+f14 =polFace([polVertex(icosahedronVert[10]), polVertex(icosahedronVert[9]), polVertex(icosahedronVert[11])],"ICOS","N")
+f15 =polFace([polVertex(icosahedronVert[11]), polVertex(icosahedronVert[2]), polVertex(icosahedronVert[10])],"ICOS","O")
+f16 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[2]), polVertex(icosahedronVert[4])],"ICOS","P")
+f17 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[4]), polVertex(icosahedronVert[6])],"ICOS","Q")
+f18 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[6]), polVertex(icosahedronVert[8])],"ICOS","R")
+f19 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[8]), polVertex(icosahedronVert[10])],"ICOS","S")
+f20 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[10]), polVertex(icosahedronVert[2])],"ICOS","T")
 
-img = im.imread('images/atlas1.jpg')
+img = im.imread('images/test4.jpg')
+imageOut =  Image.new("RGB", (int(polFace.upClass*850*3),int(polFace.upClass*850*3)),"white")
+imageOut1 =  Image.new("RGB", (int(polFace.upClass*850*3),int(polFace.upClass*850*3)),"white")
+faceMap = {}
 
-f1.projectOnToPlace(img)
-f2.projectOnToPlace(img)
-f3.projectOnToPlace(img)
-f4.projectOnToPlace(img)
-f5.projectOnToPlace(img)
-f6.projectOnToPlace(img)
-f7.projectOnToPlace(img)
-f8.projectOnToPlace(img)
-f9.projectOnToPlace(img)
-f10.projectOnToPlace(img)
-f11.projectOnToPlace(img)
-f12.projectOnToPlace(img)
-f13.projectOnToPlace(img)
-f14.projectOnToPlace(img)
-f15.projectOnToPlace(img)
-f16.projectOnToPlace(img)
-f17.projectOnToPlace(img)
-f18.projectOnToPlace(img)
-f19.projectOnToPlace(img)   
-f20.projectOnToPlace(img)    
+
+f7.projectOnToPlace(img,faceMap,imageOut)
+f1.projectOnToPlace(img,faceMap,imageOut)
+f2.projectOnToPlace(img,faceMap,imageOut)
+f6.projectOnToPlace(img,faceMap,imageOut)
+f8.projectOnToPlace(img,faceMap,imageOut)
+f9.projectOnToPlace(img,faceMap,imageOut)
+f15.projectOnToPlace(img,faceMap,imageOut)
+f16.projectOnToPlace(img,faceMap,imageOut)
+f17.projectOnToPlace(img,faceMap,imageOut)
+f20.projectOnToPlace(img,faceMap,imageOut)    
+
+f12.projectOnToPlace(img,faceMap,imageOut1)
+f3.projectOnToPlace(img,faceMap,imageOut1)
+f4.projectOnToPlace(img,faceMap,imageOut1)
+f5.projectOnToPlace(img,faceMap,imageOut1)
+f10.projectOnToPlace(img,faceMap,imageOut1)
+f11.projectOnToPlace(img,faceMap,imageOut1)
+f13.projectOnToPlace(img,faceMap,imageOut1)
+f14.projectOnToPlace(img,faceMap,imageOut1)
+f18.projectOnToPlace(img,faceMap,imageOut1)
+f19.projectOnToPlace(img,faceMap,imageOut1)   
+imageOut.show()
+imageOut1.show()
 
 
 icosahedronFaces = [ [0, 3, 11], [0, 5, 3], [0, 7, 5], [0, 9, 7], [0, 11, 9], # North

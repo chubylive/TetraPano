@@ -145,7 +145,7 @@ class polFace():
         # print(np.max(convertedScreenCoord.T[0]))
         self.trans = np.max(convertedScreenCoord.T[0])
         self.scale = (self.height/2) * (1/self.trans) * up
-        print("trans: ", self.trans, "scale: ", self.scale)
+        # print("trans: ", self.trans, "scale: ", self.scale)
         # plt.plot(x,y,'b.')
         rou = np.sqrt(x ** 2 + y ** 2)
         c = np.arctan(rou)
@@ -301,12 +301,197 @@ class polFace():
         
         
         # exit()
-        if(self.faceType == "TETRA" or self.faceType == "ICOS" ):
+        if(self.faceType == "TETRA" ):
             faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
             (((xyPoints[1])[0] + self.trans) * self.scale,((xyPoints[1])[1] + self.trans) * self.scale),
             (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale)]
             # print(xyPoints,"\n", faceVert)
             self.transformTri(faceVert,faceVert,prjImage,imageOut)
+        elif(self.faceType == "ICOS"):
+            faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
+            (((xyPoints[1])[0] + self.trans) * self.scale,((xyPoints[1])[1] + self.trans) * self.scale),
+            (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale)]
+            ((x11,x12), (x21,x22), (x31,x32)) = faceVert
+            xt = up * (850 )
+            yt = up * (850 )
+
+            if (self.faceId == "G"):
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+            elif (self.faceId == "B"):
+                gFace = self.faceMap["G"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z11 - x31
+                yt = z12 - x32
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+            elif (self.faceId == "C"): 
+                gFace = self.faceMap["L"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z21 - x21
+                yt = z22 - x22
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+            elif (self.faceId == "D"):     
+                gFace = self.faceMap["L"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z21 - x31
+                yt = z22 - x32
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+            elif (self.faceId == "E"):     
+                gFace = self.faceMap["L"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z31 - x31
+                yt = z32 - x32
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+
+            elif (self.faceId == "F"):     
+                gFace = self.faceMap["G"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z11 - x31
+                yt = z12 - x32
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+            elif (self.faceId == "A"):     
+                gFace = self.faceMap["G"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z11 - x21
+                yt = z12 - x22
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+            elif (self.faceId == "H"):  
+                gFace = self.faceMap["G"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z11 - x21
+                yt = z12 - x22
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+            elif (self.faceId == "I"):
+                gFace = self.faceMap["H"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z11 - x31
+                yt = z12 - x32
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+            elif (self.faceId == "J"):
+                gFace = self.faceMap["C"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z21 - x31
+                yt = z22 - x32
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+
+            elif (self.faceId == "K"):
+                gFace = self.faceMap["L"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z21 - x11
+                yt = z22 - x12
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+            elif (self.faceId == "L"):
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+            elif (self.faceId == "M"):
+                gFace = self.faceMap["L"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z11 - x31
+                yt = z12 - x32
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+            elif (self.faceId == "N"):
+                gFace = self.faceMap["E"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z21 - x31
+                yt = z22 - x32
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+
+            elif (self.faceId == "O"):
+                gFace = self.faceMap["F"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z11 - x21
+                yt = z12 - x22
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+
+            elif (self.faceId == "P"):
+                gFace = self.faceMap["G"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z31 - x21
+                yt = z32 - x22
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+            elif (self.faceId == "Q"):
+                gFace = self.faceMap["G"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z21 - x21
+                yt = z22 - x22
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+
+            elif (self.faceId == "R"):
+                gFace = self.faceMap["L"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z11 - x31
+                yt = z12 - x32
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+
+            elif (self.faceId == "S"):
+                gFace = self.faceMap["L"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z11 - x21
+                yt = z12 - x22
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+
+            elif (self.faceId == "T"):
+                gFace = self.faceMap["O"]
+                cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
+                (z11,z12), (z21,z22), (z31,z32) = gFace
+                xt = z21 - x31
+                yt = z22 - x32
+                
+                faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+
+            self.transformTri(faceVert,faceVertMove,prjImage,imageOut)
+            self.faceMap[self.faceId] = faceVertMove
 
         elif(self.faceType == "OCTA"):
             faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
@@ -425,8 +610,6 @@ class polFace():
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
             elif (self.faceId == "H"):
                 aFace = self.faceMap["A"]
-                # xt = up * ((850))
-                # yt = up * (850)
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
                 (x11,x12) = rotate((cx,cy),(x11,x12),1.25664)
@@ -665,10 +848,10 @@ class polFace():
 
     
     def transformSqr(self, src_Sqr, dst_Sqr, src_img, dst_img):
-        print("transforming square face")
-        print(src_Sqr)
-        print(dst_Sqr);
-        print("EndParam")
+        # print("transforming square face")
+        # print(src_Sqr)
+        # print(dst_Sqr);
+        # print("EndParam")
         ((x11,x12), (x21,x22), (x31,x32), (x41,x42)) = src_Sqr
         ((y11,y12), (y21,y22), (y31,y32), (y41,y42)) = dst_Sqr
         triInSqr = ((x11,x12), (x21,x22), (x31,x32))
