@@ -6,6 +6,7 @@ from math import pi
 import imageio as im
 import matplotlib.pyplot as plt
 from PIL import Image
+from datetime import datetime
 
 
 degrees = 180 / pi
@@ -38,4 +39,6 @@ f5.projectOnToPlace(img,faceMap,imageOut)
 f6.projectOnToPlace(img,faceMap,imageOut)
 f7.projectOnToPlace(img,faceMap,imageOut)
 f8.projectOnToPlace(img,faceMap,imageOut)
-imageOut.show()
+now = datetime.now()
+current_time = now.strftime("%H_%M_%S")   
+imageOut.save("images/octa_" + current_time+ ".jpg")

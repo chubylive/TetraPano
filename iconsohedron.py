@@ -6,6 +6,7 @@ from math import pi
 import imageio as im
 import matplotlib.pyplot as plt
 from PIL import Image
+from datetime import datetime
 
  # # # Icosohedron
 sign = lambda x: math.copysign(1, x)
@@ -117,7 +118,8 @@ f18 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[6]), polV
 f19 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[8]), polVertex(icosahedronVert[10])],"ICOS","S")
 f20 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[10]), polVertex(icosahedronVert[2])],"ICOS","T")
 
-img = im.imread('images/test4.jpg')
+img = im.imread('images/room.jpg')
+print(polFace.upClass)
 imageOut =  Image.new("RGB", (int(polFace.upClass*850*3),int(polFace.upClass*850*3)),"white")
 imageOut1 =  Image.new("RGB", (int(polFace.upClass*850*3),int(polFace.upClass*850*3)),"white")
 faceMap = {}
@@ -143,9 +145,11 @@ f11.projectOnToPlace(img,faceMap,imageOut1)
 f13.projectOnToPlace(img,faceMap,imageOut1)
 f14.projectOnToPlace(img,faceMap,imageOut1)
 f18.projectOnToPlace(img,faceMap,imageOut1)
-f19.projectOnToPlace(img,faceMap,imageOut1)   
-imageOut.show()
-imageOut1.show()
+f19.projectOnToPlace(img,faceMap,imageOut1)
+now = datetime.now()
+current_time = now.strftime("%H_%M_%S")   
+imageOut.save("images/icosA_" + current_time+ ".jpg")
+imageOut1.save("images/icosB_" + current_time+ ".jpg")
 
 
 icosahedronFaces = [ [0, 3, 11], [0, 5, 3], [0, 7, 5], [0, 9, 7], [0, 11, 9], # North

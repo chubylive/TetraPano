@@ -9,7 +9,7 @@ from PIL import ImageDraw
 
 fig,ax = plt.subplots()
 pi_2 = pi * 0.5
-up = 1
+up = 5
 def longLatToCartesian(lon, lat):
         R=1
         phi = ((90 - lat)* pi)/180
@@ -47,6 +47,52 @@ def rotate(origin, point, angle):
     qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
     qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
     return qx, qy
+
+def drawTabUpLeft(side, imageOut):
+    thicknesH = 50 * 2 * up
+    thicknesH1 = 57 * 2 * up
+    thicknesA = 30 * 2 * up
+    thicknesB = 40 * 2 * up
+    (t11,t12), (t31,t32) = side
+    lineDraw = ImageDraw.Draw(imageOut)
+    lineDraw.line((t11,t12) +  (t11 - thicknesH, t12 + thicknesA),fill=178, width=4)
+    lineDraw.line((t31,t32) +  (t31, t32 - thicknesH1),fill=178, width=4)
+    lineDraw.line((t11 - thicknesH, t12 + thicknesA) +  (t31, t32 - thicknesH1),fill=178, width=4)
+
+def drawTabLeft(side, imageOut):
+    thicknesH = 50 * 2 * up
+    thicknesH1 = 57 * 2 * up
+    thicknesA = 30 * 2 * up
+    thicknesB = 40 * 2 * up
+    (t11,t12), (t31,t32) = side
+    lineDraw = ImageDraw.Draw(imageOut)
+    lineDraw.line((t11,t12) +  (t11 - thicknesH, t12 - thicknesA),fill=178, width=4)
+    lineDraw.line((t31,t32) +  (t31, t32 + thicknesH1),fill=178, width=4)
+    lineDraw.line((t11 - thicknesH, t12 - thicknesA) +  (t31, t32 + thicknesH1),fill=178, width=4)
+
+
+def drawTabRight(side, imageOut):
+    thicknesH = 50 * 2 * up
+    thicknesH1 = 57 * 2 * up
+    thicknesA = 30 * 2 * up
+    thicknesB = 40 * 2 * up
+    (t11,t12), (t21,t22) = side
+    lineDraw = ImageDraw.Draw(imageOut)
+    lineDraw.line((t11,t12) +  (t11 + thicknesH, t12 + thicknesA),fill=178, width=4)
+    lineDraw.line((t21,t22) +  (t21, t22 - thicknesH1),fill=178, width=4)
+    lineDraw.line((t11 + thicknesH, t12 + thicknesA) +  (t21, t22 - thicknesH1),fill=178, width=4)
+    # lineDraw.line((xx1 + xt + thicknesH, yx1 + yt) +  (xx3 + xt + thicknesA, yx3 + yt - thicknesB),fill=178, width=4)
+    # lineDraw.line((xx3 + xt, yx3+ yt) +  (xx3 + xt + thicknesA, yx3 + yt - thicknesB),fill=178, width=4)
+
+
+    # tabDraw = ImageDraw.Draw(imageOut)
+
+def drawHelpLine(side, imageOut):
+    (t11,t12), (t21,t22) = side
+    lineDraw = ImageDraw.Draw(imageOut)
+    lineDraw.line((t11, t12) + (t21,t22),fill=118, width=3)
+
+
 class polVertex ():
     
     def __init__(self,lonlat):
@@ -68,17 +114,17 @@ class polFace():
         self.scale = 1
         self.faceMap = {}
         if(faceType == "CUBE"):
-            self.FOV =[37/2, 37]
+            self.FOV = [37/2, 37]
         elif(faceType == "TETRA"):
-            self.FOV =[104/2, 104]
+            self.FOV = [104/2, 104]
         elif(faceType == "OCTA"):
-            self.FOV =[52/2, 52]
+            self.FOV = [52/2, 52]
         elif(faceType == "DODE"):
-            self.FOV =[28/2, 28]
+            self.FOV = [28/2, 28]
         elif(faceType == "ICOS"):
-            self.FOV =[28/2, 28]
+            self.FOV = [28/2, 28]
         else:
-            self.FOV =[104/2, 104]
+            self.FOV = [104/2, 104]
 
         self.screen_points = self.get_screen_img()
         # cx,cy,cz = longLatToCartesian(self.center.lon, self.center.lat)
@@ -144,7 +190,7 @@ class polFace():
         # print(np.max(convertedScreenCoord.T[0]))
         # print(np.max(convertedScreenCoord.T[0]))
         self.trans = np.max(convertedScreenCoord.T[0])
-        self.scale = (self.height/2) * (1/self.trans) * up
+        self.scale = (self.height/2) * (1/self.trans) 
         # print("trans: ", self.trans, "scale: ", self.scale)
         # plt.plot(x,y,'b.')
         rou = np.sqrt(x ** 2 + y ** 2)
@@ -238,7 +284,6 @@ class polFace():
         #     B_idx = 2097151
     
         flat_img = np.reshape(self.frame, [-1, self.frame_channel])
-        # print(len(flat_img), np.shape(A_idx), np.shape(B_idx), np.shape(C_idx), np.shape(D_idx))
 
         for idx in range(0,len(A_idx)):
             if A_idx[idx] >= len(flat_img) :
@@ -305,7 +350,6 @@ class polFace():
             faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
             (((xyPoints[1])[0] + self.trans) * self.scale,((xyPoints[1])[1] + self.trans) * self.scale),
             (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale)]
-            # print(xyPoints,"\n", faceVert)
             self.transformTri(faceVert,faceVert,prjImage,imageOut)
         elif(self.faceType == "ICOS"):
             faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
@@ -326,6 +370,13 @@ class polFace():
                 yt = z12 - x32
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawTabLeft(side, imageOut)
+                drawHelpLine(side1, imageOut)
+                drawHelpLine(side, imageOut)                                
             elif (self.faceId == "C"): 
                 gFace = self.faceMap["L"]
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
@@ -334,7 +385,13 @@ class polFace():
                 yt = z22 - x22
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
-
+                
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawTabLeft(side, imageOut)
+                drawHelpLine(side1, imageOut)
+                drawHelpLine(side, imageOut)                                
             elif (self.faceId == "D"):     
                 gFace = self.faceMap["L"]
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
@@ -344,6 +401,12 @@ class polFace():
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
 
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawTabLeft(side, imageOut)
+                drawHelpLine(side1, imageOut)
+                drawHelpLine(side, imageOut)                                
             elif (self.faceId == "E"):     
                 gFace = self.faceMap["L"]
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
@@ -353,7 +416,12 @@ class polFace():
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
 
-
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawTabLeft(side, imageOut)
+                drawHelpLine(side1, imageOut)
+                drawHelpLine(side, imageOut)                                
             elif (self.faceId == "F"):     
                 gFace = self.faceMap["G"]
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
@@ -371,7 +439,13 @@ class polFace():
                 yt = z12 - x22
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
-
+                
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawTabLeft(side, imageOut)
+                drawHelpLine(side1, imageOut)
+                drawHelpLine(side, imageOut)                
             elif (self.faceId == "H"):  
                 gFace = self.faceMap["G"]
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
@@ -390,6 +464,9 @@ class polFace():
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
 
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side1 = (t11,t12), (t21,t22)
+                drawHelpLine(side1, imageOut)
             elif (self.faceId == "J"):
                 gFace = self.faceMap["C"]
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
@@ -399,7 +476,9 @@ class polFace():
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
 
-
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t21,t22)
+                drawTabUpLeft(side, imageOut)
             elif (self.faceId == "K"):
                 gFace = self.faceMap["L"]
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
@@ -420,7 +499,7 @@ class polFace():
                 yt = z12 - x32
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
-
+          
             elif (self.faceId == "N"):
                 gFace = self.faceMap["E"]
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
@@ -431,6 +510,9 @@ class polFace():
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
 
 
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                drawHelpLine(side, imageOut)
             elif (self.faceId == "O"):
                 gFace = self.faceMap["F"]
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
@@ -439,7 +521,9 @@ class polFace():
                 yt = z12 - x22
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
-
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                drawTabLeft(side, imageOut)
 
             elif (self.faceId == "P"):
                 gFace = self.faceMap["G"]
@@ -450,6 +534,13 @@ class polFace():
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
 
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawTabRight(side, imageOut)
+                drawHelpLine(side1, imageOut)
+                drawHelpLine(side, imageOut)
+
             elif (self.faceId == "Q"):
                 gFace = self.faceMap["G"]
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
@@ -459,6 +550,12 @@ class polFace():
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
 
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawTabRight(side, imageOut)
+                drawHelpLine(side1, imageOut)
+                drawHelpLine(side, imageOut)                
 
             elif (self.faceId == "R"):
                 gFace = self.faceMap["L"]
@@ -469,6 +566,12 @@ class polFace():
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
 
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawTabRight(side, imageOut)
+                drawHelpLine(side1, imageOut)
+                drawHelpLine(side, imageOut)                
 
             elif (self.faceId == "S"):
                 gFace = self.faceMap["L"]
@@ -479,6 +582,12 @@ class polFace():
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
 
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawTabRight(side, imageOut)
+                drawHelpLine(side1, imageOut)
+                drawHelpLine(side, imageOut)                
 
             elif (self.faceId == "T"):
                 gFace = self.faceMap["O"]
@@ -488,6 +597,13 @@ class polFace():
                 yt = z22 - x32
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
+                
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawTabRight(side, imageOut)
+                drawHelpLine(side1, imageOut)
+                drawHelpLine(side, imageOut)
 
 
             self.transformTri(faceVert,faceVertMove,prjImage,imageOut)
@@ -497,7 +613,6 @@ class polFace():
             faceVert = [(((xyPoints[0])[0] + self.trans) * self.scale,((xyPoints[0])[1] + self.trans) * self.scale),
             (((xyPoints[1])[0] + self.trans) * self.scale,((xyPoints[1])[1] + self.trans) * self.scale),
             (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale)]
-            # print(xyPoints,"\n", faceVert)
             ((x11,x12), (x21,x22), (x31,x32)) = faceVert
             if (self.faceId == "A"):
                 xt = up * (850 + 425 + 425/2)
@@ -556,8 +671,6 @@ class polFace():
                 xt  = up * (850 * 2 + 425)
                 yt  = up * (850/2)
 
-                # faceVertMove = ((x31 + xt, x32 + yt), (x21 + xt, x22 + yt), (x11 + xt, x12 + yt), (x41 + xt, x42 + yt))
-                # faceVertMove = ((x21 + xt, x22 + yt), (x31 + xt, x32 + yt), (x41 + xt, x42 + yt), (x11 + xt, x12 + yt))
                 faceVertMove = ((x41 + xt, x42 + yt), (x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt))
 
             elif (self.faceId == "B"):
@@ -591,7 +704,6 @@ class polFace():
                     
                 faceVertMove = (z11 - xt, z12), (z21 - xt, z22), (z31 - xt, z32), (z41 - xt, z42)
 
-            # print(xyPoints,"\n", faceVert)
             self.transformSqr(faceVert,faceVertMove,prjImage,imageOut)
         elif(self.faceType == "DODE"):
 
@@ -600,13 +712,10 @@ class polFace():
             (((xyPoints[2])[0] + self.trans) * self.scale,((xyPoints[2])[1] + self.trans) * self.scale),
             (((xyPoints[3])[0] + self.trans) * self.scale,((xyPoints[3])[1] + self.trans) * self.scale),
             (((xyPoints[4])[0] + self.trans) * self.scale,((xyPoints[4])[1] + self.trans) * self.scale)]
-            # print(xyPoints,"\n", faceVert)
             xt = up * ((850 + 425 ))
-            yt = up * (850 + 425/2 )
+            yt = up * (850 + 425/2)
             ((x11,x12), (x21,x22), (x31,x32), (x41,x42), (x51,x52)) = faceVert
             if (self.faceId == "A"):
-                # xt = up * ((850 + 425 - 198))
-                # yt = up * (850 )
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
             elif (self.faceId == "H"):
                 aFace = self.faceMap["A"]
@@ -621,9 +730,6 @@ class polFace():
                 xt = z31 - x21
                 yt = z32 - x22
                 
-                # xt -= distancePoint(z11,z12,z41,z42) 
-
-                # faceVertMove = (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
             elif (self.faceId ==  "D"):
                 aFace = self.faceMap["A"]
@@ -637,9 +743,7 @@ class polFace():
                 (x51,x52) = rotate((cx,cy),(x51,x52),pi)
                 ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
                 xt = 0
-                # print(z12,z22,z32,z42,z52,x12,x52)
                 yt = z22 - x12
-                # faceVertMove = (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
 
             elif (self.faceId ==  "B"):
@@ -654,11 +758,8 @@ class polFace():
                 ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
 
                 xt = z11 - x11 
-                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
                 yt = z12 - x12
-                # faceVertMove = (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
-                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
             elif (self.faceId ==  "C"):
                 aFace = self.faceMap["A"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -672,9 +773,7 @@ class polFace():
 
                 xt = z51 - x21  
                 yt = z52 - x22
-                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
-                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
             elif (self.faceId ==  "F"):
                 aFace = self.faceMap["A"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -688,26 +787,17 @@ class polFace():
 
                 xt = z41 - x21
                 yt = z42 - x22
-                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
-                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
 
             elif (self.faceId ==  "G"):
                 aFace = self.faceMap["J"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
-                # (x11,x12) = rotate((cx,cy),(x11,x12),-2*pi/5 )
-                # (x21,x22) = rotate((cx,cy),(x21,x22),-2*pi/5 )
-                # (x31,x32) = rotate((cx,cy),(x31,x32),-2*pi/5 )
-                # (x41,x42) = rotate((cx,cy),(x41,x42),-2*pi/5 )
-                # (x51,x52) = rotate((cx,cy),(x51,x52),-2*pi/5 )
                 ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
 
                 xt = z21 - x51
                 yt = z22 - x52
-                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
-                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
             elif (self.faceId ==  "I"):
                 aFace = self.faceMap["J"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -723,7 +813,6 @@ class polFace():
                 yt = z52 - x42
                 # print(x12,x22,x32,x42,x52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
-                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
             elif (self.faceId ==  "J"):
                 aFace = self.faceMap["A"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -738,9 +827,7 @@ class polFace():
 
                 xt = 0
                 yt = 0
-                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
-                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
             elif (self.faceId ==  "K"):
                 aFace = self.faceMap["J"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -761,9 +848,7 @@ class polFace():
                 xt = z31 - x51
                 yt = z32 - x52
 
-                # print(z12,z22,z32,z42,z52,x12,x22,x32,x42,x52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
-                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
             elif (self.faceId ==  "L"):
                 aFace = self.faceMap["J"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -779,7 +864,6 @@ class polFace():
                 yt = z52 - x32
                 # print(x12,x22,x32,x42,x52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
-                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
             elif (self.faceId ==  "E"):
                 aFace = self.faceMap["J"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -795,14 +879,13 @@ class polFace():
                 yt = z22 - x32
                 # print(x12,x22,x32,x42,x52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
-                # faceVertMove = ((x11 + xt, x12 - yt), (x21 + xt, x22 - yt), (x31 + xt, x32 - yt),(x41 + xt, x42 - yt),(x51 + xt, x52 - yt)) 
 
             self.transformPent(faceVert,faceVertMove,prjImage,imageOut)
             self.faceMap[self.faceId] = faceVertMove
 
         else:
             print("not exist")
-        imageOut.save("images/test11.jpg")
+        # imageOut.save("images/test11.jpg")
 
     def getFaceMap(self):
         return self.faceMap
@@ -869,7 +952,7 @@ class polFace():
         
 
     def transformPent(self, src_Sqr, dst_Sqr, src_img, dst_img):
-        print("transforming pentagon face")
+        # print("transforming pentagon face")
         ((x11,x12), (x21,x22), (x31,x32), (x41,x42), (x51,x52)) = src_Sqr
         ((y11,y12), (y21,y22), (y31,y32), (y41,y42), (y51,y52)) = dst_Sqr
         triA = ((x11,x12), (x21,x22), (x31,x32))

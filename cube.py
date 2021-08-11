@@ -6,6 +6,8 @@ from math import pi
 import imageio as im
 import matplotlib.pyplot as plt
 from PIL import Image
+from datetime import datetime
+
 
 degrees = 180 / pi
 asin1_3 = math.asin(1/3)
@@ -32,8 +34,9 @@ f3.projectOnToPlace(img,faceMap,imageOut)
 f5.projectOnToPlace(img,faceMap,imageOut)
 f6.projectOnToPlace(img,faceMap,imageOut)
 f4.projectOnToPlace(img,faceMap,imageOut)
-imageOut.show()
-# f3.projectOnToPlace(img)
+now = datetime.now()
+current_time = now.strftime("%H_%M_%S")   
+imageOut.save("images/cube_" + current_time+ ".jpg")# f3.projectOnToPlace(img)
 # f4.projectOnToPlace(img)
 # f5.projectOnToPlace(img)
 # f6.projectOnToPlace(img)
