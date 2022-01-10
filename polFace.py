@@ -9,7 +9,7 @@ from PIL import ImageDraw
 
 fig,ax = plt.subplots()
 pi_2 = pi * 0.5
-up = 5
+up = 4
 def longLatToCartesian(lon, lat):
         R=1
         phi = ((90 - lat)* pi)/180
@@ -35,6 +35,11 @@ def distancePointToLine(x0,y0,px1,py1,px2,py2):
     numer = abs((px2 - px1)*(py1 - y0) - (px1 - x0)*(py2 - py1))
     denum = math.sqrt(((px2 - px1)**2) + ((py2 - py1)**2))
     return numer/denum
+def lineMidPoint(line):
+    (t11,t12), (t21,t22) = line
+
+    return((t11+t21)/2,(t12+t22)/2)
+
 def rotate(origin, point, angle):
     """
     Rotate a point counterclockwise by a given angle around a given origin.
@@ -48,7 +53,115 @@ def rotate(origin, point, angle):
     qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
     return qx, qy
 
-def drawTabUpLeft(side, imageOut):
+def slope(line):
+    (t11,t12), (t21,t22) = line    
+    return ((t22 - t12),(t21 - t11))
+def perpSlope(line):
+    (t11,t12), (t21,t22) = line
+    return ((-1 * (t21 - t11)),(t22 - t12))
+
+def line_intersection(line1, line2):
+    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
+    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
+
+    def det(a, b):
+        return a[0] * b[1] - a[1] * b[0]
+
+    div = det(xdiff, ydiff)
+    if div == 0:
+       raise Exception('lines do not intersect')
+
+    d = (det(*line1), det(*line2))
+    x = det(d, xdiff) / div
+    y = det(d, ydiff) / div
+    return x, y
+def drawOctaTab(side, dir, imageOut):
+    (t11,t12), (t31,t32) = side
+    pSlope = perpSlope(side)
+    (py,px) = pSlope
+    xt = 0.15 
+    yt = 0.15 
+    (x11,x12) = lineMidPoint(side)
+    x11 = x11 + px * xt
+    x12 = x12 + py * yt
+    lineDraw = ImageDraw.Draw(imageOut)
+    # lineDraw.line(lineMidPoint(side) + (x11,x12) ,fill=178, width=4)
+    lineDraw.line((t11,t12) + (x11,x12) ,fill=178, width=4)
+    lineDraw.line((t31,t32) + (x11,x12) ,fill=178, width=4)
+    lineDraw.line((t11,t12) + (t31,t32) ,fill=178, width=4)
+
+    pass
+def drawDodeTab(side, imageOut):
+    (t11,t12), (t31,t32) = side
+    pSlope = perpSlope(side)
+    (py,px) = pSlope
+    (sy,sx) = slope(side)
+    xt = -0.20 
+    yt = -0.20 
+    xt1 = 0.70 /2
+    yt1 = 0.70 /2
+    lineDraw = ImageDraw.Draw(imageOut)
+
+    (x11,x12) = lineMidPoint(side)
+    x11 = x11 + (px * xt)
+    x12 = x12 + (py * yt)
+    # lineDraw.line(lineMidPoint(side) + (x11,x12) ,fill=178, width=4)
+
+    (x21,x22) = (x11,x12)
+    x31 = x21 + sx * xt1
+    x32 = x22 + sy * yt1    
+    x41 = x21 - sx * xt1
+    x42 = x22 - sy * yt1    
+    lineDraw.line((x41,x42) + (x31,x32) ,fill=178, width=4)
+    lineDraw.line((t11,t12) + (x41,x42) ,fill=178, width=4)
+    lineDraw.line((t31,t32) + (x31,x32) ,fill=178, width=4)
+    lineDraw.line((t11,t12) + (t31,t32) ,fill=178, width=4)
+
+def drawDodeAltTab(side, imageOut, sideFslope):
+    (t11,t12), (t31,t32) = side
+    pSlope = perpSlope(side)
+    (py,px) = pSlope
+    (sy,sx) = slope(side)
+    (ty,tx) = slope(sideFslope)
+    xt = -0.20 
+    yt = -0.20 
+    xt1 = 0.32
+    yt1 = 0.32
+    xt2 = 0.43
+    yt2 = 0.43
+    xt3 = 0.70 /2
+    yt3 = 0.70 /2
+
+    lineDraw = ImageDraw.Draw(imageOut)
+    (x11,x12) = lineMidPoint(side)
+    (x21,x22) = (x11,x12)
+
+    x11 = x11 + px * xt
+    x12 = x12 + py * yt
+
+    x41 = x11 - sx * xt1
+    x42 = x12 - sy * yt1 
+    x51 = x11 + sx * xt3
+    x52 = x12 + sy * yt3
+    # lineDraw.line((x41,x42) + (x11,x12) ,fill=178, width=4) 
+
+    b1 = x21 - sx * xt2
+    b2 = x22 - sy * yt2
+    b3 = b1 + tx * -10
+    b4 = b2 + ty * -10
+
+    bLine = ((b1,b2),(b3,b4))
+    tLine = ((x41,x42),(x11,x12))
+    (p1,p2) = line_intersection(bLine,tLine)
+
+    lineDraw.line((p1,p2) + (x51,x52) ,fill=178, width=4) 
+    lineDraw.line((x51,x52) + ((t31,t32)),fill=178, width=4) 
+    lineDraw.line((t31,t32) + (t11,t12) ,fill=178, width=4) 
+    lineDraw.line((b1,b2) + (p1,p2) ,fill=178, width=4) 
+
+
+
+def drawIcosTabUpLeft(side, imageOut):
     thicknesH = 50 * 2 * up
     thicknesH1 = 57 * 2 * up
     thicknesA = 30 * 2 * up
@@ -59,7 +172,7 @@ def drawTabUpLeft(side, imageOut):
     lineDraw.line((t31,t32) +  (t31, t32 - thicknesH1),fill=178, width=4)
     lineDraw.line((t11 - thicknesH, t12 + thicknesA) +  (t31, t32 - thicknesH1),fill=178, width=4)
 
-def drawTabLeft(side, imageOut):
+def drawIcosTabLeft(side, imageOut):
     thicknesH = 50 * 2 * up
     thicknesH1 = 57 * 2 * up
     thicknesA = 30 * 2 * up
@@ -71,7 +184,7 @@ def drawTabLeft(side, imageOut):
     lineDraw.line((t11 - thicknesH, t12 - thicknesA) +  (t31, t32 + thicknesH1),fill=178, width=4)
 
 
-def drawTabRight(side, imageOut):
+def drawIcosTabRight(side, imageOut):
     thicknesH = 50 * 2 * up
     thicknesH1 = 57 * 2 * up
     thicknesA = 30 * 2 * up
@@ -374,7 +487,7 @@ class polFace():
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t31,t32)
                 side1 = (t11,t12), (t21,t22)
-                drawTabLeft(side, imageOut)
+                drawIcosTabLeft(side, imageOut)
                 drawHelpLine(side1, imageOut)
                 drawHelpLine(side, imageOut)                                
             elif (self.faceId == "C"): 
@@ -389,7 +502,7 @@ class polFace():
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t31,t32)
                 side1 = (t11,t12), (t21,t22)
-                drawTabLeft(side, imageOut)
+                drawIcosTabLeft(side, imageOut)
                 drawHelpLine(side1, imageOut)
                 drawHelpLine(side, imageOut)                                
             elif (self.faceId == "D"):     
@@ -404,7 +517,7 @@ class polFace():
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t31,t32)
                 side1 = (t11,t12), (t21,t22)
-                drawTabLeft(side, imageOut)
+                drawIcosTabLeft(side, imageOut)
                 drawHelpLine(side1, imageOut)
                 drawHelpLine(side, imageOut)                                
             elif (self.faceId == "E"):     
@@ -419,7 +532,7 @@ class polFace():
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t31,t32)
                 side1 = (t11,t12), (t21,t22)
-                drawTabLeft(side, imageOut)
+                drawIcosTabLeft(side, imageOut)
                 drawHelpLine(side1, imageOut)
                 drawHelpLine(side, imageOut)                                
             elif (self.faceId == "F"):     
@@ -443,7 +556,7 @@ class polFace():
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t31,t32)
                 side1 = (t11,t12), (t21,t22)
-                drawTabLeft(side, imageOut)
+                drawIcosTabLeft(side, imageOut)
                 drawHelpLine(side1, imageOut)
                 drawHelpLine(side, imageOut)                
             elif (self.faceId == "H"):  
@@ -478,7 +591,7 @@ class polFace():
 
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t21,t22)
-                drawTabUpLeft(side, imageOut)
+                drawIcosTabUpLeft(side, imageOut)
             elif (self.faceId == "K"):
                 gFace = self.faceMap["L"]
                 cx,cy = ((center_pointXY[0] + self.trans) * self.scale ),((center_pointXY[1] + self.trans) * self.scale )
@@ -523,7 +636,7 @@ class polFace():
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt)) 
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t31,t32)
-                drawTabLeft(side, imageOut)
+                drawIcosTabLeft(side, imageOut)
 
             elif (self.faceId == "P"):
                 gFace = self.faceMap["G"]
@@ -537,7 +650,7 @@ class polFace():
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t31,t32)
                 side1 = (t11,t12), (t21,t22)
-                drawTabRight(side, imageOut)
+                drawIcosTabRight(side, imageOut)
                 drawHelpLine(side1, imageOut)
                 drawHelpLine(side, imageOut)
 
@@ -553,7 +666,7 @@ class polFace():
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t31,t32)
                 side1 = (t11,t12), (t21,t22)
-                drawTabRight(side, imageOut)
+                drawIcosTabRight(side, imageOut)
                 drawHelpLine(side1, imageOut)
                 drawHelpLine(side, imageOut)                
 
@@ -569,7 +682,7 @@ class polFace():
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t31,t32)
                 side1 = (t11,t12), (t21,t22)
-                drawTabRight(side, imageOut)
+                drawIcosTabRight(side, imageOut)
                 drawHelpLine(side1, imageOut)
                 drawHelpLine(side, imageOut)                
 
@@ -585,7 +698,7 @@ class polFace():
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t31,t32)
                 side1 = (t11,t12), (t21,t22)
-                drawTabRight(side, imageOut)
+                drawIcosTabRight(side, imageOut)
                 drawHelpLine(side1, imageOut)
                 drawHelpLine(side, imageOut)                
 
@@ -601,7 +714,7 @@ class polFace():
                 (t11,t12), (t21,t22), (t31,t32) = faceVertMove
                 side = (t11,t12), (t31,t32)
                 side1 = (t11,t12), (t21,t22)
-                drawTabRight(side, imageOut)
+                drawIcosTabRight(side, imageOut)
                 drawHelpLine(side1, imageOut)
                 drawHelpLine(side, imageOut)
 
@@ -623,16 +736,30 @@ class polFace():
                 (z11,z12), (z21,z22), (z31,z32) = aFace
                 xt = distancePoint(z11,z12, z21,z22)
                 faceVertMove = (z11,z12), (z11 + xt,z12), (z31,z32)
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawHelpLine(side1,imageOut)
             elif (self.faceId == "C"): 
                 aFace = self.faceMap["A"]
                 (z11,z12), (z21,z22), (z31,z32) = aFace
                 yt = distancePointToLine(z11,z12, z21,z22,z31,z32)
                 faceVertMove = (z11,z12 - yt * 2), (z21,z22),(z31,z32)
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawOctaTab(side,"A",imageOut)
+                drawHelpLine(side1,imageOut)
             elif (self.faceId == "D"):     
                 bFace = self.faceMap["B"]
                 (z11,z12), (z21,z22), (z31,z32) = bFace
                 xt = distancePoint(z11,z12, z21,z22)
                 faceVertMove = (z31 + xt,z32), (z31,z32), (z21,z22)
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawOctaTab(side,"A",imageOut)
+                drawHelpLine(side1,imageOut)
             elif (self.faceId == "E"):     
                 aFace = self.faceMap["A"]
                 (z11,z12), (z21,z22), (z31,z32) = aFace
@@ -643,16 +770,30 @@ class polFace():
                 (z11,z12), (z21,z22), (z31,z32) = eFace
                 yt = distancePointToLine(z21,z22, z11,z12,z31,z32)
                 faceVertMove = (z11,z12), (z31,z32), (z21 ,z22 + yt*2)
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawOctaTab(side,"A",imageOut)
             elif (self.faceId == "G"):     
                 eFace = self.faceMap["E"]
                 (z11,z12), (z21,z22), (z31,z32) = eFace
                 xt = distancePoint(z11, z12, z21, z22)
                 faceVertMove = (z21 - xt,z22), (z31,z32), (z21 ,z22)
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawOctaTab(side,"A",imageOut)
+                drawHelpLine(side1,imageOut)
             elif (self.faceId == "H"):     
-                gFace = self.faceMap["G"]
+                gFace = self.faceMap["F"]
                 (z11,z12), (z21,z22), (z31,z32) = gFace
                 xt = distancePoint(z11, z12, z21, z22)
-                faceVertMove = (z11, z12), (z21 - xt ,z22), (z21 ,z22)
+                faceVertMove = (z31 -xt, z32), (z31 ,z32), (z21 ,z22)
+                (t11,t12), (t21,t22), (t31,t32) = faceVertMove
+                side = (t11,t12), (t31,t32)
+                side1 = (t11,t12), (t21,t22)
+                drawOctaTab(side,"A",imageOut)
+                drawHelpLine(side1,imageOut)
 
             self.transformTri(faceVert,faceVertMove,prjImage,imageOut)
             self.faceMap[self.faceId] = faceVertMove
@@ -731,6 +872,16 @@ class polFace():
                 yt = z32 - x22
                 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = faceVertMove
+                side = (x21, x22),(x31, x32)
+                side1 = (x31, x32),(x41, x42)
+                side2 = (x41, x42),(x51, x52)
+                side3 = (x11,x12),(x51, x52)
+                drawDodeTab(side1,imageOut)
+                drawDodeTab(side2,imageOut)
+                drawDodeAltTab(side, imageOut,side2)
+                drawHelpLine(side3,imageOut)
             elif (self.faceId ==  "D"):
                 aFace = self.faceMap["A"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -745,6 +896,16 @@ class polFace():
                 xt = 0
                 yt = z22 - x12
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = faceVertMove
+                side = (x21, x22),(x31, x32)
+                side1 = (x31, x32),(x41, x42)
+                side2 = (x41, x42),(x51, x52)
+                side3 = (x11,x12),(x21, x22)
+
+                drawDodeAltTab(side3, imageOut,side1)
+                drawHelpLine(side2,imageOut)
+                drawDodeTab(side,imageOut)
+                drawDodeTab(side1,imageOut)
 
             elif (self.faceId ==  "B"):
                 aFace = self.faceMap["A"]
@@ -760,6 +921,16 @@ class polFace():
                 xt = z11 - x11 
                 yt = z12 - x12
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = faceVertMove
+                side = (x21, x22),(x31, x32)
+                side1 = (x31, x32),(x41, x42)
+                side2 = (x41, x42),(x51, x52)
+                side3 = (x11,x12),(x21, x22)
+
+                drawDodeAltTab(side3, imageOut,side1)
+                drawHelpLine(side2,imageOut)
+                drawDodeTab(side,imageOut)
+                drawDodeTab(side1,imageOut)
             elif (self.faceId ==  "C"):
                 aFace = self.faceMap["A"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -774,6 +945,16 @@ class polFace():
                 xt = z51 - x21  
                 yt = z52 - x22
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = faceVertMove
+                side = (x21, x22),(x31, x32)
+                side1 = (x31, x32),(x41, x42)
+                side2 = (x41, x42),(x51, x52)
+                side3 = (x11,x12),(x51, x52)
+                drawDodeTab(side1,imageOut)
+                drawDodeTab(side2,imageOut)
+                drawDodeAltTab(side, imageOut,side2)
+                drawHelpLine(side3,imageOut)
+
             elif (self.faceId ==  "F"):
                 aFace = self.faceMap["A"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -788,6 +969,15 @@ class polFace():
                 xt = z41 - x21
                 yt = z42 - x22
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = faceVertMove
+                side = (x21, x22),(x31, x32)
+                side1 = (x31, x32),(x41, x42)
+                side2 = (x41, x42),(x51, x52)
+                side3 = (x11,x12),(x51, x52)
+                drawDodeTab(side1,imageOut)
+                drawDodeTab(side2,imageOut)
+                drawDodeAltTab(side, imageOut,side2)
+                drawHelpLine(side3,imageOut)
 
             elif (self.faceId ==  "G"):
                 aFace = self.faceMap["J"]
@@ -798,6 +988,17 @@ class polFace():
                 xt = z21 - x51
                 yt = z22 - x52
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = faceVertMove         
+                side = (x21, x22),(x31, x32)
+                side1 = (x31, x32),(x41, x42)
+                side2 = (x41, x42),(x51, x52)
+                side3 = (x11,x12),(x21, x22)
+                side4 = (x51, x52),(x11,x12)
+                drawHelpLine(side3,imageOut)
+                drawHelpLine(side,imageOut)
+                drawHelpLine(side1,imageOut)
+                drawDodeAltTab(side4, imageOut,side)
+                
             elif (self.faceId ==  "I"):
                 aFace = self.faceMap["J"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -813,6 +1014,17 @@ class polFace():
                 yt = z52 - x42
                 # print(x12,x22,x32,x42,x52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = faceVertMove
+                side = (x21, x22),(x31, x32)
+                side1 = (x31, x32),(x41, x42)
+                side2 = (x41, x42),(x51, x52)
+                side3 = (x11,x12),(x21, x22)
+                side4 = (x11,x12),(x51, x52)
+                drawHelpLine(side4,imageOut)
+                drawHelpLine(side,imageOut)
+                drawHelpLine(side3,imageOut)
+                drawDodeAltTab(side2, imageOut,side3)
+                
             elif (self.faceId ==  "J"):
                 aFace = self.faceMap["A"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -849,6 +1061,17 @@ class polFace():
                 yt = z32 - x52
 
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = faceVertMove         
+                side = (x21, x22),(x31, x32)
+                side1 = (x31, x32),(x41, x42)
+                side2 = (x41, x42),(x51, x52)
+                side3 = (x11,x12),(x21, x22)
+                side4 = (x51, x52),(x11,x12)
+                drawHelpLine(side3,imageOut)
+                drawHelpLine(side,imageOut)
+                drawHelpLine(side1,imageOut)
+                drawDodeAltTab(side4, imageOut,side)
+                
             elif (self.faceId ==  "L"):
                 aFace = self.faceMap["J"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -864,6 +1087,16 @@ class polFace():
                 yt = z52 - x32
                 # print(x12,x22,x32,x42,x52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = faceVertMove
+                side = (x21, x22),(x31, x32)
+                side1 = (x31, x32),(x41, x42)
+                side2 = (x41, x42),(x51, x52)
+                side3 = (x11,x12),(x21, x22)
+                side4 = (x11,x12),(x51, x52)
+                drawHelpLine(side4,imageOut)
+                drawHelpLine(side,imageOut)
+                drawHelpLine(side3,imageOut)
+                drawDodeAltTab(side2, imageOut,side3)
             elif (self.faceId ==  "E"):
                 aFace = self.faceMap["J"]
                 (z11,z12), (z21,z22), (z31,z32), (z41,z42), (z51,z52) = aFace
@@ -879,6 +1112,16 @@ class polFace():
                 yt = z22 - x32
                 # print(x12,x22,x32,x42,x52)
                 faceVertMove = ((x11 + xt, x12 + yt), (x21 + xt, x22 + yt), (x31 + xt, x32 + yt),(x41 + xt, x42 + yt),(x51 + xt, x52 + yt)) 
+                ((x11, x12), (x21, x22), (x31, x32),(x41, x42),(x51, x52)) = faceVertMove
+                side = (x21, x22),(x31, x32)
+                side1 = (x31, x32),(x41, x42)
+                side2 = (x41, x42),(x51, x52)
+                side3 = (x11,x12),(x21, x22)
+                side4 = (x11,x12),(x51, x52)
+                drawHelpLine(side4,imageOut)
+                drawHelpLine(side,imageOut)
+                drawHelpLine(side3,imageOut)
+                drawDodeAltTab(side2, imageOut,side3)
 
             self.transformPent(faceVert,faceVertMove,prjImage,imageOut)
             self.faceMap[self.faceId] = faceVertMove

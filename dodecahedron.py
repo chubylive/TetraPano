@@ -58,10 +58,9 @@ f12 = polFace([polVertex(dodecahedronVert[11][0]), polVertex(dodecahedronVert[11
         polVertex(dodecahedronVert[11][3]), polVertex(dodecahedronVert[11][4])], "DODE","L")
 
 
-img = im.imread('images/test3.jpg')
+img = im.imread('images/room.jpg')
 imageOut =  Image.new("RGB", (int(polFace.upClass*850*4),int(polFace.upClass*850*4)),"white")
 imageOut1 =  Image.new("RGB", (int(polFace.upClass*850*4),int(polFace.upClass*850*4)),"white")
-imageOut12 =  Image.new("RGB", (int(polFace.upClass*850*4),int(polFace.upClass*850*4)),"white")
 
 faceMap = {}
 
@@ -82,6 +81,8 @@ f12.projectOnToPlace(img,faceMap,imageOut1)
 now = datetime.now()
 current_time = now.strftime("%H_%M_%S")   
 imageOut.save("images/dodeA_" + current_time+ ".jpg")
+# imageOut1.show()
+
 imageOut1.save("images/dodeB_" + current_time+ ".jpg")
 
     
