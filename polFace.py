@@ -10,6 +10,10 @@ from PIL import ImageDraw
 fig,ax = plt.subplots()
 pi_2 = pi * 0.5
 up = 4
+
+def setRes(upVal):
+    up = upVal
+
 def longLatToCartesian(lon, lat):
         R=1
         phi = ((90 - lat)* pi)/180
