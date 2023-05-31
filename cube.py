@@ -25,7 +25,7 @@ def makeNet(filePath, fileName, res):
       f5 = polFace([polVertex(cube[3]), polVertex(cube[0]), polVertex(cube[4]), polVertex(cube[7])], "CUBE","C")
       f6 = polFace([polVertex(cube[4]), polVertex(cube[5]), polVertex(cube[6]), polVertex(cube[7])], "CUBE","F")
 
-      img = im.imread(filePath + fileName)
+      img = im.imread(fileName)
       imageOut =  Image.new("RGB", (int(polFace.upClass*850*5),int(polFace.upClass*850*4)),"white")
 
       faceMap = {}
@@ -39,4 +39,4 @@ def makeNet(filePath, fileName, res):
       current_time = now.strftime("%H_%M_%S")   
       imageOut.save(filePath + "cube_" + current_time+ ".jpg")
       
-makeNet("images/" , "test.jpg", 4)
+#makeNet("images/" , "test.jpg", 4)

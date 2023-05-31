@@ -60,7 +60,7 @@ def makeNet(filePath, fileName, res):
                 polVertex(dodecahedronVert[11][3]), polVertex(dodecahedronVert[11][4])], "DODE","L")
 
 
-        img = im.imread(filePath + fileName)
+        img = im.imread(fileName)
         imageOut =  Image.new("RGB", (int(polFace.upClass*850*4),int(polFace.upClass*850*4)),"white")
         imageOut1 =  Image.new("RGB", (int(polFace.upClass*850*4),int(polFace.upClass*850*4)),"white")
 

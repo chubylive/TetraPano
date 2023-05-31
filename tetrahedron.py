@@ -30,7 +30,7 @@ def makeNet(filePath, fileName, res):
     f3 = polFace([polVertex(vertices[0]), polVertex(vertices[1]), polVertex(vertices[2])], "TETRA","C")
     f4 = polFace([polVertex(vertices[0]), polVertex(vertices[3]), polVertex(vertices[1])], "TETRA","D")
     
-    img = im.imread(filePath + fileName)
+    img = im.imread(fileName)
     # img = im.imread('images/test2.jpg')
     imageOut =  Image.new("RGB", (int(polFace.upClass*850*5),int(polFace.upClass*850*4)),"white")
     faceMap = {}

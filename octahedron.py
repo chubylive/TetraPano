@@ -27,7 +27,7 @@ def makeNet(filePath, fileName, res):
     f7 = polFace([polVertex(octahedronFaces[5]), polVertex(octahedronFaces[4]), polVertex(octahedronFaces[1])], "OCTA","G")
     f8 = polFace([polVertex(octahedronFaces[5]), polVertex(octahedronFaces[3]), polVertex(octahedronFaces[4])], "OCTA","H")
             
-    img = im.imread(filePath + fileName)
+    img = im.imread(fileName)
     # img = im.imread('images/test2.jpg')
     # img = im.imread('images/atlas1.jpg')
 

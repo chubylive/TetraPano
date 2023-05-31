@@ -122,8 +122,8 @@ def makeNet(filePath, fileName, res):
         f19 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[8]), polVertex(icosahedronVert[10])],"ICOS","S")
         f20 =polFace([polVertex(icosahedronVert[1]), polVertex(icosahedronVert[10]), polVertex(icosahedronVert[2])],"ICOS","T")
 
-        img = im.imread('images/room.jpg')
-        print(polFace.upClass)
+        img = im.imread(fileName)
+        # print(polFace.upClass)
         imageOut =  Image.new("RGB", (int(polFace.upClass*850*3),int(polFace.upClass*850*3)),"white")
         imageOut1 =  Image.new("RGB", (int(polFace.upClass*850*3),int(polFace.upClass*850*3)),"white")
         faceMap = {}
@@ -162,4 +162,4 @@ def makeNet(filePath, fileName, res):
 
 
         icosahedronParents = [-1,0,1,11,3,0,7,1,7,8,9,10,11,12,13,6,8,10,19,15]
-#makeNet("images/" , "test.jpg", 4)
+# makeNet("images/" , "test.jpg", 4)
