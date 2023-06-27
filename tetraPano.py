@@ -8,15 +8,16 @@ BAR_MAX = 1000
 
 currentProcGeod = ""
 sg.theme('DarkAmber')
-layout = [[sg.Text('Select which geodesic to map.')],               #0
-          [sg.Checkbox('CUBE')],                                    #1
-          [sg.Checkbox('ICOS')],                                    #2
-          [sg.Checkbox('DODEC')],                                   #3
-          [sg.Checkbox('OCTA')],                                    #4
-          [sg.Checkbox('TETRA')],                                   #5
-          [sg.Text("Choose a 2:1 image: "), sg.FileBrowse(key="-IN-")],       #6
-          [sg.Text("Save location:      "), sg.FolderBrowse(key="-OUT-")],     #7
-          [sg.Submit(), sg.Cancel()]                                #8
+layout = [[sg.Text('Select which geodesic to map.')],                           #0
+          [sg.Checkbox('CUBE')],                                                #1
+          [sg.Checkbox('ICOS')],                                                #2
+          [sg.Checkbox('DODEC')],                                               #3
+          [sg.Checkbox('OCTA')],                                                #4
+          [sg.Checkbox('TETRA')],                                               #5
+          [sg.Text("Choose a 2:1 image: "), sg.FileBrowse(key="-IN-")],         #6
+          [sg.Text("Save location:      "), sg.FolderBrowse(key="-OUT-")],      #7
+          [sg.Text("Resolution (1-6): "), sg.InputText(key='-RES-')],
+          [sg.Submit(), sg.Cancel()]                                            #8
           ]
 layout_1 = [[sg.Text('Progress Bar for ' + currentProcGeod )],
           [sg.ProgressBar(BAR_MAX, orientation='h', size=(20,20), key='-PROG-')],
@@ -29,16 +30,16 @@ event, values = window.read()
 if(event == 'Submit'):
     if (values[0] == 1):
         print ("mapping cube")
-        cub.makeNet(values["-OUT-"], values["-IN-"],4)
+        cub.makeNet(values["-OUT-"] + "/", values["-IN-"], int(values["-RES-"]))
     if (values[1] == 1):
         print ("mapping icosohedron")
-        ico.makeNet(values["-OUT-"], values["-IN-"],4)
+        ico.makeNet(values["-OUT-"] + "/", values["-IN-"], int(values["-RES-"]))
     if (values[2] == 1):
         print ("mapping dedecadron")
-        dod.makeNet(values["-OUT-"], values["-IN-"],4)
+        dod.makeNet(values["-OUT-"] + "/", values["-IN-"], int(values["-RES-"]))
     if (values[3] == 1):
         print ("mapping octahedron")
-        oct.makeNet(values["-OUT-"], values["-IN-"],4)
+        oct.makeNet(values["-OUT-"] + "/", values["-IN-"], int(values["-RES-"]))
     if (values[4] == 1):
         print ("mapping tetrahedron")
-        tet.makeNet(values["-OUT-"], values["-IN-"],4)
+        tet.makeNet(values["-OUT-"] + "/", values["-IN-"], int(values["-RES-"]))
